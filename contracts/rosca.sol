@@ -2,37 +2,40 @@ pragma solidity ^0.4.4;
 
 /*
 *  Possible missing functions
-* - Start() onlyForeman;
-* - check? to perform check and make sure certain values are available and correct
+* - integrity check? to perform check and make sure certain values are available and correct
+* TODO: a way to randomly pick a member that havent got paid this
 */
 contract rosca {
     address constant WETRUST = 0x0;
 
     enum Period { Weekly, Monthly } // are we only allwing 2 options?
 
-    event LogParticipantRegistered(string uniqName);
-    event LogContributionMade(string uniqName);
-    event LogBidPlaced(uint bid,address winnerAddress);
-    event LogRoundFundsRelease(string winnerUniqName, uint amountInWei);
+    event LogParticipantRegistered(address user);
+    event LogContributionMade(address user, uint amount);
+    event LogNewLowestBid(uint bid,address winnerAddress);
+    event LogRoundFundsRelease(address winnerUniqName, uint amountInWei);
+
 
     //added
-    event LogRoundEnded(uint currentRound, address winner);
+    event LogFundsWithdrawal(address user, uint amount,address destination);
+    event LogStartOfPeriod(uint currentRound);
 
     //state variables
     address foreman;
     uint roundSum;
-    int16 numRounds;
+    uint numRounds;
     int8 minParticipants;
-    Period roundPeriod;
-    int startTime;
+    uint roundPeriodInDays;
+    uint startTime;
     int16 feeToService;
     address feeAddress;
+    uint currentRound;  //currentRound will be set to 0 when ROSCA is created and will turn to one when the ROSCA actually start
 
     /*
         not sure about which structures to use yet
     */
     struct USER{
-        uint contributed; // number of times contributed
+        uint contributed; // number of times contributed or could be amount contributed
         uint paid; // number of times bid Won
         uint allowance; // how much they are allowed to withdraw, i.e if someone win , their allowance will go up by the bid.
         bool alive; //needed to check if a member is indeed a member
@@ -55,33 +58,65 @@ contract rosca {
         throw;
         _;
     }
+    modifier beforeStart {
+        if(currentRound == 0)
+        throw;
+        _;
+    }
 
     /**
      * Creates a new ROSCA in which every roundPeriod each person contributes
      * roundSum, for numRounds
      */
     function rosca(
-        Period _roundPeriod,
+        uint _roundPeriodInDays,
         uint _roundSum,
-        int16 _numRounds,
+        uint _numRounds,
         int8 _minParticipants,
-        int _startTime,
+        uint _startTime,
         int16 _feeInThousandths,
         address _feeAddress)
     {
-        roundPeriod = _roundPeriod;
+        roundPeriodInDays = _roundPeriodInDays;
+        if(roundSum < 1) throw; //if everyone is only required to contribute 0 , whats the point of rosca
         roundSum = _roundSum;
+        if(_numRounds < 1) throw;
         numRounds = _numRounds;
+        if(_minParticipants < 2) throw;// there should be at least 2 people to make a group
         minParticipants = _minParticipants;
+        if(_startTime < now) throw;
         startTime = _startTime;
+        if(_feeInThousandths < 0) throw; //fee must be non-negative
         feeToService = _feeInThousandths;
+        if(feeAddress != 0) //feeAddress shouldnt be empty(null)
         feeAddress = _feeAddress;
     }
 
+    function startRound()
+    {
+
+        if(now < startTime + ( currentRound  * (roundPeriodInDays * 1 days)))
+            throw;
+        else
+        {
+            members[winnerAddress].allowance += lowestBid;
+            members[winnerAddress].paid++;
+            LogRoundFundsRelease(winnerAddress, lowestBid);
+            if(currentRound < numRounds)  // reset variables related to bidding
+            {
+                lowestBid = roundSum;
+                // TODO: set winnderAddress to a random member that havent got paid in this epoch
+
+                currentRound++;
+            }
+
+        }
+
+    }
     /**
      * Registers another user-proxy for this ROSCA (msg.sender is the proxy).
      */
-    function joinRequest()
+    function joinRequest() beforeStart
     {
         //only put the request in the pending list if they are not in the ROSCA already
         if(!members[msg.sender].alive)
@@ -90,12 +125,15 @@ contract rosca {
             throw;
     }
 
-    function acceptJoinRequest(address requestor) onlyForeman
+    function acceptJoinRequest(address requestor)
+        onlyForeman
+        beforeStart
     {
         if(pendingJoinRequest[requestor])
         {
             members[requestor] = USER({paid: 0 , contributed: 0, alive: true, allowance: 0});
             memberAddress.push(requestor);
+            LogParticipantRegistered(requestor);
             delete(pendingJoinRequest[requestor]); // take out the requestor's address in the pending list
         }
         else throw;
@@ -117,6 +155,7 @@ contract rosca {
             members[msg.sender].contributed = msg.value;
             totalAmountInContract = msg.value;
             //TODO(shine) : look into security about deposit and withdrawal
+            LogContributionMade(msg.sender, msg.value);
         }
         else
            throw;
@@ -133,7 +172,7 @@ contract rosca {
             //set new lowestBid and winnerAddress, also trigger event new Bid placed
             lowestBid = distrubtionAmountInWei;
             winnerAddress = msg.sender;
-            LogBidPlaced(lowestBid, winnerAddress);
+            LogNewLowestBid(lowestBid, winnerAddress);
 
         }else
             throw;
@@ -151,13 +190,16 @@ contract rosca {
             members[msg.sender].allowance = 0;                      // send() completes its task
 
 
-            if (!msg.sender.send(amountToWithdraw)) {   //if the send() fails, put the allowance back to its original place
+            if (!opt_destination.send(amountToWithdraw)) {   //if the send() fails, put the allowance back to its original place
                 // No need to call throw here, just reset the amount owing
                 members[msg.sender].allowance = amountToWithdraw;
                 return false;
             //TODO(shine) : look into security about withdraw
-             }
-             else return true;
+            }
+            else{
+                LogFundsWithdrawal(msg.sender, amountToWithdraw, opt_destination);
+                return true;
+            }
         }
         else
             throw;
