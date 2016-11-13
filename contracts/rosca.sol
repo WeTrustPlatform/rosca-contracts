@@ -3,7 +3,7 @@ pragma solidity ^0.4.4;
 /*
 *  Possible missing functions
 * - integrity check? to perform check and make sure certain values are available and correct
-* TODO: a way to randomly pick a member that havent got paid this
+*
 */
 contract rosca {
     address constant WETRUST = 0x0;
@@ -24,6 +24,8 @@ contract rosca {
     address foreman;
     uint roundSum;
     uint numRounds;
+    uint currentEpoch;
+    uint numEpochs;
     int8 minParticipants;
     uint roundPeriodInDays;
     uint startTime;
@@ -70,8 +72,8 @@ contract rosca {
      */
     function rosca(
         uint _roundPeriodInDays,
-        uint _roundSum,
-        uint _numRounds,
+        uint _roundSum, //i am assuming this is referring to number epochs to run
+        uint _numEpochs,
         int8 _minParticipants,
         uint _startTime,
         int16 _feeInThousandths,
@@ -80,8 +82,8 @@ contract rosca {
         roundPeriodInDays = _roundPeriodInDays;
         if(roundSum < 1) throw; //if everyone is only required to contribute 0 , whats the point of rosca
         roundSum = _roundSum;
-        if(_numRounds < 1) throw;
-        numRounds = _numRounds;
+        if(_numEpochs < 1) throw;
+        numEpochs = _numEpochs;
         if(_minParticipants < 2) throw;// there should be at least 2 people to make a group
         minParticipants = _minParticipants;
         if(_startTime < now) throw;
@@ -90,25 +92,54 @@ contract rosca {
         feeToService = _feeInThousandths;
         if(feeAddress != 0) //feeAddress shouldnt be empty(null)
         feeAddress = _feeAddress;
+
+
+        //register foreman as a member of ROSCA and increment numRounds in a Epoch to 1
+        members[msg.sender] = USER({paid: 0 , contributed: 0, alive: true, allowance: 0});
+        memberAddress.push(msg.sender);
+        numRounds = 1;
     }
+
+
 
     function startRound()
     {
 
-        if(now < startTime + ( currentRound  * (roundPeriodInDays * 1 days)))
+        if(now < startTime + ( currentRound * currentEpoch  * (roundPeriodInDays * 1 days)))
             throw;
         else
         {
-            members[winnerAddress].allowance += lowestBid;
-            members[winnerAddress].paid++;
-            LogRoundFundsRelease(winnerAddress, lowestBid);
+            if(currentRound != 0 ){
+                if(winnerAddress == 0)
+                {
+                    //there is no bid in this round so find an unpaid address for this epoch
+                    for(uint i = 0 ; i < 10; i++)
+                    {
+                        if(members[memberAddress[(currentRound-1 + i) % memberAddress.length]].paid < currentEpoch)
+                        winnerAddress = memberAddress[currentRound-1 + i];
+                    }
+
+                }
+                members[winnerAddress].allowance += lowestBid;
+                members[winnerAddress].paid++;
+                LogRoundFundsRelease(winnerAddress, lowestBid);
+
+            }
             if(currentRound < numRounds)  // reset variables related to bidding
             {
                 lowestBid = roundSum;
+                winnerAddress = 0;
                 // TODO: set winnderAddress to a random member that havent got paid in this epoch
 
                 currentRound++;
+            }else if(currentEpoch < numEpochs) //end of Epoch reset rounds
+            {
+                currentEpoch++;
+                currentRound = 1;
+                lowestBid = roundSum;
+
             }
+
 
         }
 
@@ -133,6 +164,7 @@ contract rosca {
         {
             members[requestor] = USER({paid: 0 , contributed: 0, alive: true, allowance: 0});
             memberAddress.push(requestor);
+            numRounds++;
             LogParticipantRegistered(requestor);
             delete(pendingJoinRequest[requestor]); // take out the requestor's address in the pending list
         }
@@ -167,7 +199,7 @@ contract rosca {
      */
     function bid(uint distrubtionAmountInWei)
     {
-        if(distrubtionAmountInWei < lowestBid)
+        if(distrubtionAmountInWei < lowestBid || !(members[msg.sender].paid < currentEpoch))
         {
             //set new lowestBid and winnerAddress, also trigger event new Bid placed
             lowestBid = distrubtionAmountInWei;
@@ -206,7 +238,13 @@ contract rosca {
 
     }
 
+    function integrityCheck(uint option) // option will specify whether it will be a message call or transaction call to freeze the contract
+    {
+        /* Checklist for integrityCheck
+        *
+        */
 
+    }
     // TODO(ron): escape hatch.
 
     /**
