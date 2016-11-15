@@ -8,7 +8,7 @@ pragma solidity ^0.4.4;
 contract ROSCA {
   address constant WETRUST = 0x0;
   uint constant MIN_CONTRIBUTION_SIZE = 1000000000000;  // 1e12
-  uint constant MAX_FEE_IN_THOUSANDTH = 200;
+  uint constant MAX_FEE_IN_THOUSANDTHS = 200;
   address constant WETRUST_FEE_ADDRESS = 0x0;
   uint constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;
   uint constant MINIMUM_PARTICIPANTS = 2;
@@ -18,7 +18,7 @@ contract ROSCA {
   uint constant MIN_DISTRIBUTION_RATIO = 65;
 
   event LogParticipantApplied(address user);
-  event LogParticipantApprove(address user);
+  event LogParticipantApproved(address user);
   event LogContributionMade(address user, uint amount);
   event LogNewLowestBid(uint bid,address winnerAddress);
   event LogRoundFundsReleased(address winnerAddress, uint amountInWei);
@@ -26,7 +26,6 @@ contract ROSCA {
   event LogStartOfPeriod(uint currentRound);
 
   // state variables
-  //uint16 numRoundsInEpoch;     // number of rounds in 1 epoch, user doesnt have control over this, it'll increment everytime a new participant is registered
   uint16 currentEpoch;
   uint16 numEpochs;     // number of Epochs this contract will run
   uint16 roundPeriodInDays;
@@ -86,7 +85,7 @@ contract ROSCA {
     if (startTime_ < (now + MINIMUM_TIME_BEFORE_ROSCA_START)) throw;
     startTime = startTime_;
 
-    if (feeInThousandths_ > MAX_FEE_IN_THOUSANDTH) throw;
+    if (feeInThousandths_ > MAX_FEE_IN_THOUSANDTHS) throw;
     serviceFeeInThousandths = feeInThousandths_;
 
 
@@ -110,6 +109,7 @@ contract ROSCA {
 
     if (now < startTime + (uint(currentRound + (currentEpoch * membersAddresses.length))  * (uint(roundPeriodInDays) * 1 days)) || membersAddresses.length < minParticipants)
       throw;
+
     if (currentRound != 0) {
       if (winnerAddress == 0) //only true when there is no bidder in this round
       {
@@ -127,7 +127,6 @@ contract ROSCA {
       members[winnerAddress].paid++;
       LogRoundFundsReleased(winnerAddress, lowestBid);
     }
-
     if (currentRound < membersAddresses.length)  // reset variables related to bidding
     {
       lowestBid = contributionSize * membersAddresses.length;
@@ -167,7 +166,7 @@ contract ROSCA {
     members[requestor] = USER({paid: 0 , contributed: 0, alive: true, pendingWithdrawl: 0});
     membersAddresses.push(requestor);
     numRoundsInEpoch++;
-    LogParticipantApprove(requestor);
+    LogParticipantApproved(requestor);
     delete(pendingJoinRequest[requestor]); // take out the requestor's address in the pending list
   }
 
@@ -221,4 +220,3 @@ contract ROSCA {
   }
 
 }
-
