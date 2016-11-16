@@ -11,7 +11,7 @@ pragma solidity ^0.4.4;
  */
 contract ROSCA {
   uint32 constant MIN_CONTRIBUTION_SIZE = uint32(1000000000000);  // 1e12
-  uint32 constant MAX_CONTRIBUTION_SIZE = uint32(10000000000000000000); // 10 ether in Wei
+  uint64 constant MAX_CONTRIBUTION_SIZE = uint64(10000000000000000000); // 10 ether in Wei
   uint32 constant MAX_FEE_IN_THOUSANDTHS = 200;
   address constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
   uint32 constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;   // startTime of the ROSCA must be at least 1 day away from when the ROSCA is created
@@ -73,7 +73,7 @@ contract ROSCA {
     uint16 minParticipants_,
     uint startTime_,
     uint16 serviceFeeInThousandths_) {
-    if (roundPeriodInDays < MIN_ROUND_PERIOD_IN_DAYS || roundPeriodInDays > MAX_ROUND_PERIOD_IN_DAYS) throw;
+    if (roundPeriodInDays_ < MIN_ROUND_PERIOD_IN_DAYS || roundPeriodInDays_ > MAX_ROUND_PERIOD_IN_DAYS) throw;
     roundPeriodInDays = roundPeriodInDays_;
     if (contributionSize_ < MIN_CONTRIBUTION_SIZE || contributionSize_ > MAX_CONTRIBUTION_SIZE) throw;
     contributionSize = contributionSize_;
@@ -150,7 +150,7 @@ contract ROSCA {
    **/
   function acceptJoinRequest(address requestor)
     onlyForeman
-    beforeStart {
+    OnlyBeforeStart {
     if (!pendingJoinRequest[requestor]) throw;
     addMember(requestor);
     LogParticipantApproved(requestor);

@@ -1,5 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(ConvertLib);
-  deployer.autolink();
-  deployer.deploy(ROSCA);
+  deployer.deploy(ROSCA, 2, "10000000000", 3, 1479576961 , 20);
 };
+
