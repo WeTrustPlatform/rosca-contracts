@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(ROSCA, 2, "10000000000", 3, 1479576961 , 20);
+  deployer.deploy(ROSCA, 3, "10000000000", 3, 1479576961 , 20);
 };
 

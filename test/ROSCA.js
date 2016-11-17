@@ -1,8 +1,34 @@
 contract('MetaCoin', function(accounts) {
-    it("should put 10000 MetaCoin in the first account", function() {
-        var rosca = ROSCA.deployed();
+    it("Round Period should be 2 days", function() {
+        //var rosca = ROSCA.deployed();
+        //var rosca2 = ROSCA.new();
+        //var rosca = deployer.deploy(ROSCA);
 
-        return assert.equal(1,1,"testing");
+        ROSCA.new().then(function(instance) {
+            // `instance` is a new instance of the abstraction.
+            // If this callback is called, the deployment was successful.
+            console.log(instance.address);
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
+        });
+
+        /*return rosca.roundPeriodInDays.call().then(function(result){
+            assert.equal(result.valueOf(),3, "Round Period is not 3 days")
+        }).catch(function (e) {
+            if ((e + "").indexOf("invalid JUMP") || (e + "").indexOf("out of gas") > -1) {
+                return true;// We are in TestRPC
+            } else if ((e + "").indexOf("please check your gas amount") > -1) {
+                return true;// We are in Geth for a deployment
+            } else {
+                throw e;
+            }
+        });*/
+
+        /* return rosca.joinRequest({from: accounts[1], gas:3000000}).then(function(){
+            assert.equal()
+        });*/
+        // return assert.equal(1,1,"testing");
           // rosca.getBalance.call(accounts[0]).then(function(balance) {
             // assert.equal(balance.valueOf(), 10000, "10000 wasn't in the first account");
         });

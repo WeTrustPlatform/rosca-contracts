@@ -10,15 +10,15 @@ pragma solidity ^0.4.4;
  * checkingContribution, check whether or not a member as contributed as least contributionSize at the end of Round
  */
 contract ROSCA {
-  uint32 constant MIN_CONTRIBUTION_SIZE = uint32(1000000000000);  // 1e12
-  uint64 constant MAX_CONTRIBUTION_SIZE = uint64(10000000000000000000); // 10 ether in Wei
-  uint32 constant MAX_FEE_IN_THOUSANDTHS = 200;
-  address constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
-  uint32 constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;   // startTime of the ROSCA must be at least 1 day away from when the ROSCA is created
-  uint32 constant MINIMUM_PARTICIPANTS = 2;           // minimum participants for the ROSCA to start
-  uint32 constant MIN_ROUND_PERIOD_IN_DAYS = 1;
-  uint32 constant MAX_ROUND_PERIOD_IN_DAYS = 30;
-  uint32 constant MIN_DISTRIBUTION_RATIO = 65;  // the winning bid must be at least 65% of the Pot value
+  uint32 public constant MIN_CONTRIBUTION_SIZE = uint32(1000000000000);  // 1e12
+  uint64 public constant MAX_CONTRIBUTION_SIZE = uint64(10000000000000000000); // 10 ether in Wei
+  uint32 public constant MAX_FEE_IN_THOUSANDTHS = 200;
+  address public constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
+  uint32 public constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;   // startTime of the ROSCA must be at least 1 day away from when the ROSCA is created
+  uint32 public constant MINIMUM_PARTICIPANTS = 2;           // minimum participants for the ROSCA to start
+  uint32 public constant MIN_ROUND_PERIOD_IN_DAYS = 1;
+  uint32 public constant MAX_ROUND_PERIOD_IN_DAYS = 30;
+  uint32 public constant MIN_DISTRIBUTION_RATIO = 65;  // the winning bid must be at least 65% of the Pot value
 
   event LogParticipantApplied(address user);
   event LogParticipantApproved(address user);
@@ -29,13 +29,13 @@ contract ROSCA {
   event LogStartOfRound(uint currentRound);
 
   // state variables
-  uint16 roundPeriodInDays;
-  uint16 serviceFeeInThousandths;
-  uint16 currentRound;  // currentRound will be set to 0 when ROSCA is created and will turn to one when the ROSCA actually starts
-  uint16 minParticipants;
-  address foreman;
-  uint contributionSize;
-  uint startTime;
+  uint16 public roundPeriodInDays;
+  uint16 public serviceFeeInThousandths;
+  uint16 public currentRound;  // currentRound will be set to 0 when ROSCA is created and will turn to one when the ROSCA actually starts
+  uint16 public minParticipants;
+  address public foreman;
+  uint public contributionSize;
+  uint public startTime;
 
   struct User {
     uint contributed; // Total amount contributed
@@ -44,14 +44,14 @@ contract ROSCA {
     bool alive; // needed to check if a member is indeed a member
   }
 
-  mapping(address => User) members; // using struct User to keep track of contributions and paid, allowance and etc.
-  address[] membersAddresses;    // this is the only way to iterate through all the member's address
+  mapping(address => User) public members; // using struct User to keep track of contributions and paid, allowance and etc.
+  address[] public membersAddresses;    // this is the only way to iterate through all the member's address
 
-  mapping(address => bool) pendingJoinRequest; // this way , address can be used as index, if we use address[] , we'll have to go thru a whole array
+  mapping(address => bool) public pendingJoinRequest; // this way , address can be used as index, if we use address[] , we'll have to go thru a whole array
 
   // bidding related state variable
-  uint lowestBid;
-  address winnerAddress;
+  uint public lowestBid;
+  address public winnerAddress;
 
 
   modifier onlyForeman {
