@@ -1,13 +1,10 @@
 contract('MetaCoin', function(accounts) {
-    it("Round Period should be 2 days", function() {
+    it("Throw if roundPeriodInDays < MIN_ROUND_PERIOD_IN_DAYS: Passing 0 as parameter ", function() {
         //var rosca = ROSCA.deployed();
         //var rosca2 = ROSCA.new();
         //var rosca = deployer.deploy(ROSCA);
-
-        ROSCA.new().then(function(instance) {
-            // `instance` is a new instance of the abstraction.
-            // If this callback is called, the deployment was successful.
-            console.log(instance.address);
+        return ROSCA.new(0, "10000000000", 3, 1479576961 , 20).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
             // There was an error! Handle it.
@@ -32,50 +29,68 @@ contract('MetaCoin', function(accounts) {
           // rosca.getBalance.call(accounts[0]).then(function(balance) {
             // assert.equal(balance.valueOf(), 10000, "10000 wasn't in the first account");
         });
-    it("should call a function that depends on a linked library", function() {
-        var rosca = ROSCA.deployed();
-        var metaCoinBalance;
-        var metaCoinEthBalance;
-
-        return assert.equal(1,1,"testcase2");/*meta.getBalance.call(accounts[0]).then(function(outCoinBalance) {
-            metaCoinBalance = outCoinBalance.toNumber();
-            return meta.getBalanceInEth.call(accounts[0]);
-        }).then(function(outCoinBalanceEth) {
-            metaCoinEthBalance = outCoinBalanceEth.toNumber();
-        }).then(function() {
-            assert.equal(metaCoinEthBalance, 2 * metaCoinBalance, "Library function returned unexpeced function, linkage may be broken");
-        });*/
-    }); /*
-    it("should send coin correctly", function() {
-        var meta = MetaCoin.deployed();
-
-        // Get initial balances of first and second account.
-        var account_one = accounts[0];
-        var account_two = accounts[1];
-
-        var account_one_starting_balance;
-        var account_two_starting_balance;
-        var account_one_ending_balance;
-        var account_two_ending_balance;
-
-        var amount = 10;
-
-        return meta.getBalance.call(account_one).then(function(balance) {
-            account_one_starting_balance = balance.toNumber();
-            return meta.getBalance.call(account_two);
-        }).then(function(balance) {
-            account_two_starting_balance = balance.toNumber();
-            return meta.sendCoin(account_two, amount, {from: account_one});
-        }).then(function() {
-            return meta.getBalance.call(account_one);
-        }).then(function(balance) {
-            account_one_ending_balance = balance.toNumber();
-            return meta.getBalance.call(account_two);
-        }).then(function(balance) {
-            account_two_ending_balance = balance.toNumber();
-
-            assert.equal(account_one_ending_balance, account_one_starting_balance - amount, "Amount wasn't correctly taken from the sender");
-            assert.equal(account_two_ending_balance, account_two_starting_balance + amount, "Amount wasn't correctly sent to the receiver");
+    it("Throw if roundPeriodInDays >= MAX_ROUND_PERIOD_IN DAYS: Passing 31 as parameter ", function() {
+        return ROSCA.new(31, "10000000000", 3, 1479576961 , 20).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
         });
-    }); */
+    });
+    it("Throw if contributionSize < MIN_ROUND_SUM : passing 100000 as parameter", function() {
+
+        return ROSCA.new(3, "100000", 3, 1479576961 , 20).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
+        });
+    });
+    it("Throw if contributionSize > MAX_CONTRIBUTION_SIZE : passing 100000000000000000000 as parameter", function() {
+
+        return ROSCA.new(3, "100000000000000000000", 3, 1479576961 , 20).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
+        });
+    });
+    it("Throw if minimum_participants < 2 : passing 1 as parameter", function() {
+
+        return ROSCA.new(3, "10000000000", 1, 1479576961 , 20).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
+        });
+    });
+    it("Throw if MINIMUM_TIME_BEFORE_ROSCA_START < 1 day : passing now + 1 hour as parameter", function() {
+        var now = Math.round(new Date().getTime()/1000);
+        var hourFromNow = now + 3600;
+        var dayFromNow = now + 86400 + 3600;
+        return ROSCA.new(3, "10000000000", 2, hourFromNow , 20).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
+        });
+    });
+    it("Throw if feeInThousandths < 0 : passing -1 as parameter", function() {
+
+        return ROSCA.new(3, "10000000000", 2, 1479576961 , -1).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
+        });
+    });
+    it("Throw if feeInThousandths > MAX_FEE_IN_THOUSANTHS : passing 201 as parameter", function() {
+
+        return ROSCA.new(3, "10000000000", 2, 1479576961 , 201).then(function(instance) {
+            assert.isNotOk(true,"contract creation successful");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+            // There was an error! Handle it.
+        });
+    });
 });
