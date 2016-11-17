@@ -1,4 +1,4 @@
-contract('MetaCoin', function(accounts) {
+contract('ROSCA constructor test', function(accounts) {
     it("Throw if roundPeriodInDays < MIN_ROUND_PERIOD_IN_DAYS: Passing 0 as parameter ", function() {
         //var rosca = ROSCA.deployed();
         //var rosca2 = ROSCA.new();

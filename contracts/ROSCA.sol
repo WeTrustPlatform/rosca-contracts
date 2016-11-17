@@ -147,10 +147,10 @@ contract ROSCA {
   /**
    * foreman can call this method to approve a join request by a participant
    * once a requestor had been registered as member, the address will be taken out of pendingJoinRequest
-   **/
+   */
   function acceptJoinRequest(address requestor)
     onlyForeman
-    OnlyBeforeStart {
+    onlyBeforeStart {
     if (!pendingJoinRequest[requestor]) throw;
     addMember(requestor);
     LogParticipantApproved(requestor);
