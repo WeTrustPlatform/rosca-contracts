@@ -8,6 +8,8 @@ pragma solidity ^0.4.4;
  * Things still missing/needs fixing:
  * in withdraw() , add fee related logic
  * checkingContribution, check whether or not a member as contributed as least contributionSize at the end of Round
+ * when the rosca ends all the money should go out to the account user
+ * if user doesnt contribute , dont allow bidding EVER! have to be in good standing to bid/win the Pot
  */
 contract ROSCA {
   uint32 public constant MIN_CONTRIBUTION_SIZE = uint32(1000000000000);  // 1e12
