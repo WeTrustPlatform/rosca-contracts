@@ -10,7 +10,7 @@
  */
 contract('ROSCA Bidding test', function(accounts) {
     const MIN_START_DELAY = 2000;
-    const ROUND_PERIOD_DELAY = 10000;
+    const ROUND_PERIOD_DELAY = 5000;
     var now = Math.round(new Date().getTime()/1000);
 
     it("Foreman placing Bid before start, should throw", function () {
