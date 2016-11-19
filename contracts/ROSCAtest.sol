@@ -70,7 +70,7 @@ contract ROSCAtest {
     * Creates a new ROSCA and initializes the necessary variables, ROSCA doesnt start until the specified startTime
     * Creator of the contract becomes foreman and also added as the first member of the ROSCA
     */
-  function ROSCA(
+  function ROSCAtest(
     uint16 roundPeriodInDays_,
     uint contributionSize_,
     uint16 minParticipants_,
@@ -109,7 +109,7 @@ contract ROSCAtest {
     */
 
   function startRound() {
-    uint roundStartTime = startTime + (uint(currentRound)  * (uint(roundPeriodInDays) * 1 minutes));
+    uint roundStartTime = startTime + (uint(currentRound)  * (uint(roundPeriodInDays) * 1 seconds));
     if (now < roundStartTime || membersAddresses.length < minParticipants)
       throw;
 
