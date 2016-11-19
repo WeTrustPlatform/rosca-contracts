@@ -1,7 +1,10 @@
 contract('ROSCA Bidding test', function(accounts) {
-    it("Foreman placing Bid before start, should throw", function () {
+    var now = Math.round(new Date().getTime()/1000);
+    var hourFromNow = now + 3600;
+    var dayFromNow = now + 86400 + 3600;
+    /*it("Foreman placing Bid before start, should throw", function () {
         var rosca;
-        ROSCA.new(3, "10000000000", 3, 1479576961 , 20).then(function(receipt) {
+        ROSCA.new(3, "10000000000", 3, dayFromNow , 20).then(function(receipt) {
             rosca = receipt;
             rosca.bid(100000000).then(function(result){
                 assert.isOk(false, "Foreman tries to call bid before round start");
@@ -10,18 +13,21 @@ contract('ROSCA Bidding test', function(accounts) {
                 // There was an error! Handle it.
             });
         });
-    });
+    });*/
     it("Foreman placing Bid before start, should throw", function () {
-        var rosca;
+        var rosca = ROSCAtest.deployed();
         var now = Math.round(new Date().getTime()/1000);
-        ROSCAtest.new(1, "10000000000", 2, now + 1, 20 ).then(function(receipt) {
-            rosca = receipt;
-            this.timeout(1000);
-            rosca.startRound().then(function(receipt){
-               rosca.currentRound().then(function(result){
-                  assert.equal(result.toString(),"1", "Current did not increment");
-               });
-            });
+        rosca.membersAddresses.call(0).then(function(result){
+            console.log(result);
         });
+        //rosca.startRound();
+        /*rosca.startRound().then(function(receipt){
+            rosca.membersAddresses.call(0).then(function(result){
+               console.log(result);
+            });
+            /*rosca.currentRound.call().then(function(result){
+               console.log(result.toString());
+            });
+        });*/
     });
 });
