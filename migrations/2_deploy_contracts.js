@@ -1,5 +1,5 @@
 module.exports = function(deployer) {
-  deployer.deploy(ConvertLib);
-  deployer.autolink();
-  deployer.deploy(ROSCA);
+  var now = Math.round(new Date().getTime()/1000);
+  deployer.deploy(ROSCA, 3, "10000000000", 3, now + 100000 , 20);
 };
+

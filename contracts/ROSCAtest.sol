@@ -1,6 +1,7 @@
 pragma solidity ^0.4.4;
 
 /**
+ * THIS IS A TEST VERSION, TIME constraints waved to test biding related test
  * ROSCA contract allows participants to get into an agreement with each other to contribute a certain amount of ether every round
  * In every round, one participant will recieve ether that everyone contributed.
  * The winner of the pot is decided by reverse auction (lowest Bid wins).
@@ -11,12 +12,12 @@ pragma solidity ^0.4.4;
  * when the rosca ends all the money should go out to the account user
  * if user doesnt contribute , dont allow bidding EVER! have to be in good standing to bid/win the Pot
  */
-contract ROSCA {
+contract ROSCAtest {
   uint32 public constant MIN_CONTRIBUTION_SIZE = uint32(1000000000000);  // 1e12
   uint64 public constant MAX_CONTRIBUTION_SIZE = uint64(10000000000000000000); // 10 ether in Wei
   uint32 public constant MAX_FEE_IN_THOUSANDTHS = 200;
   address public constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
-  uint32 public constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;   // startTime of the ROSCA must be at least 1 day away from when the ROSCA is created
+  uint32 public constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 seconds;   // startTime of the ROSCA must be at least 1 day away from when the ROSCA is created
   uint32 public constant MINIMUM_PARTICIPANTS = 2;           // minimum participants for the ROSCA to start
   uint32 public constant MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint32 public constant MAX_ROUND_PERIOD_IN_DAYS = 30;
@@ -69,7 +70,7 @@ contract ROSCA {
     * Creates a new ROSCA and initializes the necessary variables, ROSCA doesnt start until the specified startTime
     * Creator of the contract becomes foreman and also added as the first member of the ROSCA
     */
-  function ROSCA(
+  function ROSCAtest(
     uint16 roundPeriodInDays_,
     uint contributionSize_,
     uint16 minParticipants_,
@@ -108,7 +109,7 @@ contract ROSCA {
     */
 
   function startRound() {
-    uint roundStartTime = startTime + (uint(currentRound)  * (uint(roundPeriodInDays) * 1 days));
+    uint roundStartTime = startTime + (uint(currentRound)  * (uint(roundPeriodInDays) * 1 seconds));
     if (now < roundStartTime || membersAddresses.length < minParticipants)
       throw;
 
