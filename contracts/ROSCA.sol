@@ -5,18 +5,6 @@ pragma solidity ^0.4.4;
  * In every round, one participant will recieve ether that everyone contributed.
  * The winner of the pot is decided by reverse auction (lowest Bid wins).
  *
- * Things still missing/needs fixing:
- * in withdraw() , add fee related logic (done, Sol should still be discussed)
- *   Sol: will keep deduct a fee, and keep it in contract untill the end?
- * when the rosca ends all the money should go out to the account user (done, still needs to work out sending fees to wetrust address)
- *   Sol: added endOfROSCA, cleanUp and sendFUND function
- *
- * Things brought up that needs considering:
- *   - allowing constructor to have initial list of members specified by foreman on ROSCA deployment
- *   - using a better unit than wei to represent ether i.e finney (we shouldn't be dealing with any value less than finney anyways)
- *   - getters for necessary variables (making variables public would work)
- *   - optimizing , contract deployment currently cost over 20 cents on test-net
- *   - someway to kill the contract when ROSCA is ended? (currently cleanUp functions includes selfdestruct)
  */
 contract ROSCA {
   uint64 constant MIN_CONTRIBUTION_SIZE = 1 finney;
@@ -58,7 +46,7 @@ contract ROSCA {
   address[] membersAddresses;    // this is the only way to iterate through all the member's address
 
   mapping(address => bool) pendingJoinRequest; // this way , address can be used as index, if we use address[] , we'll have to go thru a whole array
-   // bidding related state variable
+
   uint lowestBid;
   address winnerAddress;
 
@@ -134,7 +122,7 @@ contract ROSCA {
 
       currentRound++;
       LogStartOfRound(currentRound);
-    } else if (currentRound == membersAddresses.length) {
+    } else {
         endOfROSCA = true;
     }
   }
@@ -144,7 +132,7 @@ contract ROSCA {
    */
   function sendFund (address participant ,address destination) internal returns(bool success){
     uint amountToWithdraw = members[participant].pendingWithdrawal  ;  // use a temporary variable to avoid the receiver calling the withdraw function again before
-    if(this.balance < amountToWithdraw) amountToWithdraw = this.balance;
+    if (this.balance < amountToWithdraw) amountToWithdraw = this.balance;
     members[participant].pendingWithdrawal = members[participant].pendingWithdrawal - amountToWithdraw;
     if (!destination.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing
@@ -157,21 +145,12 @@ contract ROSCA {
   }
 
   /**
-   * cleanUp is to make sure that fees are send to where they are owed and
-   * make sure contract doesn't hold any ether after it ends.
-   *
+   * When the ROSCA ends and there is no more ether in the contract,
+   * selfdestruct to cleanUp the contract
    */
   function cleanUp() {
-    if(!endOfROSCA || this.balance == 0) throw;
-
-     for(uint8 i = 0; i < membersAddresses.length; i++) {
-      if(members[membersAddresses[i]].pendingWithdrawal > 0){
-        sendFund(membersAddresses[i],membersAddresses[i]);
-      }
-    }
-    //send the rest to WETRUST_FEE_ADDRESS because all that is left should be the fees to service
-    if(!WETRUST_FEE_ADDRESS.send(this.balance))
-        throw;
+    if(!endOfROSCA || this.balance > 0) throw;
+    selfdestruct(foreman);
   }
 
   /**
@@ -203,7 +182,7 @@ contract ROSCA {
    * Any excess funds will be withdrawable through withdraw().
    */
   function contribute() payable {
-    if (!members[msg.sender].alive || currentRound == 0) throw;
+    if (!members[msg.sender].alive || currentRound == 0 || endOfROSCA) throw;
     members[msg.sender].contributed += msg.value;
     if (members[msg.sender].contributed > contributionSize * membersAddresses.length) {
       uint excessContribution = members[msg.sender].contributed - (contributionSize * membersAddresses.length);
