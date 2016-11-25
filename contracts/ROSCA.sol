@@ -4,21 +4,17 @@ pragma solidity ^0.4.4;
  * ROSCA contract allows participants to get into an agreement with each other to contribute a certain amount of ether every round
  * In every round, one participant will recieve ether that everyone contributed.
  * The winner of the pot is decided by reverse auction (lowest Bid wins).
- *
  */
 contract ROSCA {
   uint64 constant MIN_CONTRIBUTION_SIZE = 1 finney;
   uint128 constant MAX_CONTRIBUTION_SIZE = 10 ether;
   uint16 constant MAX_FEE_IN_THOUSANDTHS = 200;
   uint32 constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;   // startTime of the ROSCA must be at least 1 day away from when the ROSCA is created
-  uint8 constant MINIMUM_PARTICIPANTS = 2;           // minimum participants for the ROSCA to start
   uint8 constant MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint8 constant MAX_ROUND_PERIOD_IN_DAYS = 30;
   uint8 constant MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
   address constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
 
-  event LogParticipantApplied(address user);
-  event LogParticipantApproved(address user);
   event LogContributionMade(address user, uint amount);
   event LogNewLowestBid(uint bid,address winnerAddress);
   event LogRoundFundsReleased(address winnerAddress, uint amountInWei);
@@ -42,11 +38,10 @@ contract ROSCA {
     bool alive; // needed to check if a member is indeed a member
   }
 
-  mapping(address => User) members; // using struct User to keep track of contributions and paid, allowance and etc.
+  mapping(address => User) members;
   address[] membersAddresses;    // this is the only way to iterate through all the member's address
 
-  mapping(address => bool) pendingJoinRequest; // this way , address can be used as index, if we use address[] , we'll have to go thru a whole array
-
+   // bidding related state variable
   uint lowestBid;
   address winnerAddress;
 
@@ -66,16 +61,16 @@ contract ROSCA {
   function ROSCA (
     uint16 roundPeriodInDays_,
     uint128 contributionSize_,
-    uint16 minParticipants_,
     uint startTime_,
+    address[] members_,
     uint16 serviceFeeInThousandths_) {
     if (roundPeriodInDays_ < MIN_ROUND_PERIOD_IN_DAYS || roundPeriodInDays_ > MAX_ROUND_PERIOD_IN_DAYS) throw;
     roundPeriodInDays = roundPeriodInDays_;
     if (contributionSize_ < MIN_CONTRIBUTION_SIZE || contributionSize_ > MAX_CONTRIBUTION_SIZE) throw;
     contributionSize = contributionSize_;
 
-    if (minParticipants_ < MINIMUM_PARTICIPANTS) throw; // there should be at least 2 people to make a group
-    minParticipants = minParticipants_;
+
+
     if (startTime_ < (now + MINIMUM_TIME_BEFORE_ROSCA_START)) throw;
     startTime = startTime_;
     if (serviceFeeInThousandths_ > MAX_FEE_IN_THOUSANDTHS) throw;
@@ -83,6 +78,12 @@ contract ROSCA {
 
     foreman = msg.sender;
     addMember(msg.sender);
+
+    for(uint i = 0; i < members_.length; i++)
+    {
+      addMember(members_[i]);
+    }
+
   }
 
   function addMember(address newMember) internal {
@@ -145,36 +146,13 @@ contract ROSCA {
   }
 
   /**
-   * When the ROSCA ends and there is no more ether in the contract,
-   * selfdestruct to cleanUp the contract
+   * cleanUp is to make sure that fees are send to where they are owed and
+   * make sure contract doesn't hold any ether after it ends.
+   *
    */
   function cleanUp() {
     if(!endOfROSCA || this.balance > 0) throw;
     selfdestruct(foreman);
-  }
-
-  /**
-   * Anyone not already a member of ROSCA can request to join and they'll be put into
-   * pendingJoinRequest until foreman accepts requests or ROSCA has started
-   */
-  function joinRequest() onlyBeforeStart {
-    // only put the request in the pending list if they are not in the ROSCA already
-    if (members[msg.sender].alive) throw;
-    pendingJoinRequest[msg.sender] = true;
-    LogParticipantApplied(msg.sender);
-  }
-
-  /**
-   * foreman can call this method to approve a join request by a participant
-   * once a requestor had been registered as member, the address will be taken out of pendingJoinRequest
-   */
-  function acceptJoinRequest(address requestor)
-    onlyForeman
-    onlyBeforeStart {
-    if (!pendingJoinRequest[requestor]) throw;
-    addMember(requestor);
-    LogParticipantApproved(requestor);
-    delete(pendingJoinRequest[requestor]); // take out the requestor's address in the pending list
   }
 
   /**
@@ -218,4 +196,5 @@ contract ROSCA {
     return sendFund(msg.sender, opt_destination);
   }
 }
+
 
