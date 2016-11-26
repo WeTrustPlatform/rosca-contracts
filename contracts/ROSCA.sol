@@ -28,6 +28,7 @@ contract ROSCA {
   bool endOfROSCA = false;
   address foreman;
   uint128 contributionSize;
+  uint TotalDiscount;
   uint startTime;
 
   struct User {
@@ -108,6 +109,8 @@ contract ROSCA {
           break;
         }
       }
+      if(lowestBid < contributionSize)
+        TotalDiscount += contributionSize - lowestBid;
       members[winnerAddress].credit += int(lowestBid - ((lowestBid / 10000) * serviceFeeInThousandths));
       members[winnerAddress].paid = true;
       LogRoundFundsReleased(winnerAddress, lowestBid);
@@ -142,7 +145,7 @@ contract ROSCA {
     if (bidInWei >= lowestBid ||
         members[msg.sender].paid  ||
         currentRound == 0 ||
-        members[msg.sender].credit - (currentRound * contributionSize) < 0 ||
+        members[msg.sender].credit - (currentRound * contributionSize) - int(TotalDiscount/membersAddresses.length) < 0 ||
         bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT) throw;
     lowestBid = bidInWei;
     winnerAddress = msg.sender;
@@ -158,7 +161,7 @@ contract ROSCA {
       opt_destination = msg.sender;
     if (!members[msg.sender].alive || members[msg.sender].credit - (currentRound * contributionSize) <= 0 ) throw;
 
-    uint amountToWithdraw = uint(members[msg.sender].credit - (currentRound * contributionSize));
+    uint amountToWithdraw = uint(members[msg.sender].credit - (currentRound * contributionSize)) - TotalDiscount/membersAddresses.length;
     if (this.balance < amountToWithdraw) amountToWithdraw = this.balance;
     members[msg.sender].credit = members[msg.sender].credit - int(amountToWithdraw);
     if (!opt_destination.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
@@ -171,5 +174,3 @@ contract ROSCA {
     }
   }
 }
-
-
