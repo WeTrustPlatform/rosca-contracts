@@ -15,6 +15,7 @@ contract ROSCA {
   uint8 constant MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
   address constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
 
+  event LogCannotWithdrawFully(uint requestedAmount,uint contractBalance);
   event LogContributionMade(address user, uint amount);
   event LogNewLowestBid(uint bid,address winnerAddress);
   event LogRoundFundsReleased(address winnerAddress, uint amountInWei);
@@ -28,7 +29,7 @@ contract ROSCA {
   bool endOfROSCA = false;
   address foreman;
   uint128 contributionSize;
-  uint TotalDiscount;
+  uint totalDiscount; // a discount is the difference between a winning bid and the pot value
   uint startTime;
 
   struct User {
@@ -75,8 +76,7 @@ contract ROSCA {
     foreman = msg.sender;
     addMember(msg.sender);
 
-    for(uint i = 0; i < members_.length; i++)
-    {
+    for (uint i = 0; i < members_.length; i++) {
       addMember(members_[i]);
     }
 
@@ -109,8 +109,8 @@ contract ROSCA {
           break;
         }
       }
-      if(lowestBid < contributionSize)
-        TotalDiscount += contributionSize - lowestBid;
+      if (lowestBid < contributionSize)
+        totalDiscount += contributionSize - lowestBid;
       members[winnerAddress].credit += int(lowestBid - ((lowestBid / 10000) * serviceFeeInThousandths));
       members[winnerAddress].paid = true;
       LogRoundFundsReleased(winnerAddress, lowestBid);
@@ -145,8 +145,9 @@ contract ROSCA {
     if (bidInWei >= lowestBid ||
         members[msg.sender].paid  ||
         currentRound == 0 ||
-        members[msg.sender].credit - (currentRound * contributionSize) - int(TotalDiscount/membersAddresses.length) < 0 ||
-        bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT) throw;
+        members[msg.sender].credit - (currentRound * contributionSize) - int(totalDiscount / membersAddresses.length) < 0 ||
+        bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT)
+          throw;
     lowestBid = bidInWei;
     winnerAddress = msg.sender;
     LogNewLowestBid(lowestBid, winnerAddress);
@@ -159,11 +160,18 @@ contract ROSCA {
   function withdraw(address opt_destination) returns(bool success) {
     if (opt_destination == 0)
       opt_destination = msg.sender;
-    if (!members[msg.sender].alive || members[msg.sender].credit - (currentRound * contributionSize) <= 0 ) throw;
+    if (!members[msg.sender].alive ||
+        members[msg.sender].credit - (currentRound * contributionSize) <= 0 )
+          throw;
 
-    uint amountToWithdraw = uint(members[msg.sender].credit - (currentRound * contributionSize)) - TotalDiscount/membersAddresses.length;
-    if (this.balance < amountToWithdraw) amountToWithdraw = this.balance;
-    members[msg.sender].credit = members[msg.sender].credit - int(amountToWithdraw);
+    uint amountToWithdraw = uint(members[msg.sender].credit - (currentRound * contributionSize))
+                            + (totalDiscount / membersAddresses.length);
+
+    if (this.balance < amountToWithdraw) {
+      LogCannotWithdrawFully(amountToWithdraw,this.balance);
+      amountToWithdraw = this.balance;
+    }
+    members[msg.sender].credit -= int(amountToWithdraw);
     if (!opt_destination.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing
       members[msg.sender].credit += int(amountToWithdraw);
@@ -174,3 +182,5 @@ contract ROSCA {
     }
   }
 }
+
+
