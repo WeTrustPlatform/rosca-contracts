@@ -109,9 +109,8 @@ contract ROSCA {
           break;
         }
       }
-      if (lowestBid < contributionSize)
-        totalDiscount += contributionSize - lowestBid;
-      members[winnerAddress].credit += int(lowestBid - ((lowestBid / 10000) * serviceFeeInThousandths));
+      totalDiscount += contributionSize - lowestBid;
+      members[winnerAddress].credit += int(lowestBid - ((lowestBid / 1000) * serviceFeeInThousandths));
       members[winnerAddress].paid = true;
       LogRoundFundsReleased(winnerAddress, lowestBid);
     }
@@ -162,12 +161,11 @@ contract ROSCA {
       opt_destination = msg.sender;
     if (!members[msg.sender].alive ||
         members[msg.sender].credit - (currentRound * contributionSize) <= 0 )
-          throw;
+      throw;
 
-    uint amountToWithdraw = uint(members[msg.sender].credit - (currentRound * contributionSize))
-                            + (totalDiscount / membersAddresses.length);
+    uint amountToWithdraw = uint(members[msg.sender].credit - (currentRound * contributionSize)) + (totalDiscount / membersAddresses.length);
 
-    if (this.balance < amountToWithdraw) {
+    if (this.balance < amountToWithdraw) { // this should never happen
       LogCannotWithdrawFully(amountToWithdraw,this.balance);
       amountToWithdraw = this.balance;
     }
@@ -182,5 +180,3 @@ contract ROSCA {
     }
   }
 }
-
-
