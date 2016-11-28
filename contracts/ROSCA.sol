@@ -33,7 +33,7 @@ contract ROSCA {
   uint startTime;
 
   struct User {
-    int credit;
+    uint credit;
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
   }
@@ -110,7 +110,7 @@ contract ROSCA {
         }
       }
       totalDiscount += contributionSize - lowestBid;
-      members[winnerAddress].credit += int(lowestBid - ((lowestBid / 1000) * serviceFeeInThousandths));
+      members[winnerAddress].credit += lowestBid - ((lowestBid / 1000) * serviceFeeInThousandths);
       members[winnerAddress].paid = true;
       LogRoundFundsReleased(winnerAddress, lowestBid);
     }
@@ -131,7 +131,7 @@ contract ROSCA {
    */
   function contribute() payable {
     if (!members[msg.sender].alive || currentRound == 0 || endOfROSCA) throw;
-    members[msg.sender].credit += int(msg.value);
+    members[msg.sender].credit += msg.value;
 
     LogContributionMade(msg.sender, msg.value);
   }
@@ -144,9 +144,9 @@ contract ROSCA {
     if (bidInWei >= lowestBid ||
         members[msg.sender].paid  ||
         currentRound == 0 ||
-        members[msg.sender].credit - (currentRound * contributionSize) - int(totalDiscount / membersAddresses.length) < 0 ||
+        members[msg.sender].credit - (currentRound * contributionSize) - (totalDiscount / membersAddresses.length) < 0 ||
         bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT)
-          throw;
+      throw;
     lowestBid = bidInWei;
     winnerAddress = msg.sender;
     LogNewLowestBid(lowestBid, winnerAddress);
@@ -163,16 +163,21 @@ contract ROSCA {
         members[msg.sender].credit - (currentRound * contributionSize) <= 0 )
       throw;
 
-    uint amountToWithdraw = uint(members[msg.sender].credit - (currentRound * contributionSize)) + (totalDiscount / membersAddresses.length);
+    uint totalCredit = members[msg.sender].credit + totalDiscount / membersAddresses.length;
+    uint totalDebit = currentRound * contributionSize;
+    if (totalDebit >= totalCredit) {
+        return false;
+    }
+    uint amountToWithdraw = totalCredit - totalDebit;
 
     if (this.balance < amountToWithdraw) { // this should never happen
       LogCannotWithdrawFully(amountToWithdraw,this.balance);
       amountToWithdraw = this.balance;
     }
-    members[msg.sender].credit -= int(amountToWithdraw);
+    members[msg.sender].credit -= amountToWithdraw;
     if (!opt_destination.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing
-      members[msg.sender].credit += int(amountToWithdraw);
+      members[msg.sender].credit += amountToWithdraw;
       return false;
     } else {
       LogFundsWithdrawal(msg.sender, amountToWithdraw, opt_destination);
