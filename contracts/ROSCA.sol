@@ -68,7 +68,7 @@ contract ROSCA {
 
   /**
     * Creates a new ROSCA and initializes the necessary variables. ROSCA starts after startTime.
-    * Creator of the contract becomes foreman and participant.
+    * Creator of the contract becomes foreman and a participant.
     */
   function ROSCA (
     uint16 roundPeriodInDays_,
@@ -135,7 +135,7 @@ contract ROSCA {
           winnerAddress = membersAddresses[semi_random + i];
         break;
       }
-      // Also - lowestBid is initialized to 1 + pot size. Decrement it.
+      // Also - lowestBid was initialized to 1 + pot size in startRound(). Fix that.
       lowestBid--;
     }
     totalDiscounts += contributionSize - lowestBid;
@@ -159,10 +159,10 @@ contract ROSCA {
 
   /**
    * Registers a bid from msg.sender. Participant should call this method
-   * only if the following holds for her:
+   * only if all of the following holds for her:
    * + Never won a round.
-   * + Is in good standing (i.e. actual contributions - including this round's -
-   *   plus earned discounts greater than required contributions).
+   * + Is in good standing (i.e. actual contributions, including this round's,
+   *   plus earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
   function bid(uint bidInWei) {
@@ -172,9 +172,8 @@ contract ROSCA {
         bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT)
       throw;
     if (bidInWei >= lowestBid) {
-      // Bid cannot win. We don't throw as this may be hard for frontend
-      // to predict on the one hand, and would waste the caller's gas on
-      // theother.
+      // We don't throw as this may be hard for the frontend to predict on the
+      // one hand, and would waste the caller's gas on the other.
       return;
     }
     lowestBid = bidInWei;
@@ -184,7 +183,7 @@ contract ROSCA {
 
   /**
    * Withdraws available funds for msg.sender. If opt_destination is nonzero,
-   * sends the fund to that address, otherwise send to msg.sender.
+   * sends the fund to that address, otherwise sends to msg.sender.
    */
   function withdraw(address opt_destination) returns(bool success) {
     if (opt_destination == 0)
@@ -193,9 +192,7 @@ contract ROSCA {
 
     uint totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
     uint totalDebit = currentRound * contributionSize;
-    if (totalDebit >= totalCredit) {  // nothing to withdraw
-        return false;
-    }
+    if (totalDebit >= totalCredit) throw;  // nothing to withdraw
     uint amountToWithdraw = totalCredit - totalDebit;
 
     if (this.balance < amountToWithdraw) { // this should never happen, indicates a bug
