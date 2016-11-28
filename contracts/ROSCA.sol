@@ -159,9 +159,7 @@ contract ROSCA {
   function withdraw(address opt_destination) returns(bool success) {
     if (opt_destination == 0)
       opt_destination = msg.sender;
-    if (!members[msg.sender].alive ||
-        members[msg.sender].credit - (currentRound * contributionSize) <= 0 )
-      throw;
+    if (!members[msg.sender].alive) throw;
 
     uint totalCredit = members[msg.sender].credit + totalDiscount / membersAddresses.length;
     uint totalDebit = currentRound * contributionSize;
