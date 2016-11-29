@@ -4,21 +4,18 @@ pragma solidity ^0.4.4;
  * ROSCA contract allows participants to get into an agreement with each other to contribute a certain amount of ether every round
  * In every round, one participant will recieve ether that everyone contributed.
  * The winner of the pot is decided by reverse auction (lowest Bid wins).
- *
  */
 contract ROSCA {
   uint64 constant MIN_CONTRIBUTION_SIZE = 1 finney;
   uint128 constant MAX_CONTRIBUTION_SIZE = 10 ether;
-  uint16 constant MAX_FEE_IN_THOUSANDTHS = 200;
+  uint16 constant MAX_FEE_IN_THOUSANDTHS = 20;
   uint32 constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;   // startTime of the ROSCA must be at least 1 day away from when the ROSCA is created
-  uint8 constant MINIMUM_PARTICIPANTS = 2;           // minimum participants for the ROSCA to start
   uint8 constant MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint8 constant MAX_ROUND_PERIOD_IN_DAYS = 30;
   uint8 constant MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
   address constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
 
-  event LogParticipantApplied(address user);
-  event LogParticipantApproved(address user);
+  event LogCannotWithdrawFully(uint requestedAmount,uint contractBalance);
   event LogContributionMade(address user, uint amount);
   event LogNewLowestBid(uint bid,address winnerAddress);
   event LogRoundFundsReleased(address winnerAddress, uint amountInWei);
@@ -29,24 +26,22 @@ contract ROSCA {
   uint16 roundPeriodInDays;
   uint16 serviceFeeInThousandths;
   uint16 currentRound;  // currentRound will be set to 0 when ROSCA is created and will turn to one when the ROSCA actually starts
-  uint16 minParticipants;
   bool endOfROSCA = false;
   address foreman;
   uint128 contributionSize;
+  uint totalDiscount; // a discount is the difference between a winning bid and the pot value
   uint startTime;
 
   struct User {
-    uint contributed; // Total amount contributed
-    bool paid; // yes if the member had been paid
-    uint pendingWithdrawal; // how much they are allowed to withdraw, i.e if someone wins , their pendingWithdrawal will go up by the bid.
+    uint credit;
+    bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
   }
 
-  mapping(address => User) members; // using struct User to keep track of contributions and paid, allowance and etc.
+  mapping(address => User) members;
   address[] membersAddresses;    // this is the only way to iterate through all the member's address
 
-  mapping(address => bool) pendingJoinRequest; // this way , address can be used as index, if we use address[] , we'll have to go thru a whole array
-
+   // bidding related state variable
   uint lowestBid;
   address winnerAddress;
 
@@ -66,16 +61,13 @@ contract ROSCA {
   function ROSCA (
     uint16 roundPeriodInDays_,
     uint128 contributionSize_,
-    uint16 minParticipants_,
     uint startTime_,
+    address[] members_,
     uint16 serviceFeeInThousandths_) {
     if (roundPeriodInDays_ < MIN_ROUND_PERIOD_IN_DAYS || roundPeriodInDays_ > MAX_ROUND_PERIOD_IN_DAYS) throw;
     roundPeriodInDays = roundPeriodInDays_;
     if (contributionSize_ < MIN_CONTRIBUTION_SIZE || contributionSize_ > MAX_CONTRIBUTION_SIZE) throw;
     contributionSize = contributionSize_;
-
-    if (minParticipants_ < MINIMUM_PARTICIPANTS) throw; // there should be at least 2 people to make a group
-    minParticipants = minParticipants_;
     if (startTime_ < (now + MINIMUM_TIME_BEFORE_ROSCA_START)) throw;
     startTime = startTime_;
     if (serviceFeeInThousandths_ > MAX_FEE_IN_THOUSANDTHS) throw;
@@ -83,10 +75,15 @@ contract ROSCA {
 
     foreman = msg.sender;
     addMember(msg.sender);
+
+    for (uint i = 0; i < members_.length; i++) {
+      addMember(members_[i]);
+    }
+
   }
 
   function addMember(address newMember) internal {
-    members[newMember] = User({paid: false , contributed: 0, alive: true, pendingWithdrawal: 0});
+    members[newMember] = User({paid: false , credit: 0, alive: true});
     membersAddresses.push(newMember);
   }
 
@@ -99,7 +96,7 @@ contract ROSCA {
 
   function startRound() {
     uint roundStartTime = startTime + (uint(currentRound)  * (uint(roundPeriodInDays) * 1 days));
-    if (now < roundStartTime || membersAddresses.length < minParticipants)
+    if (now < roundStartTime)
       throw;
 
     if (currentRound != 0) {
@@ -112,7 +109,8 @@ contract ROSCA {
           break;
         }
       }
-      members[winnerAddress].pendingWithdrawal += lowestBid - ((lowestBid / 10000) * serviceFeeInThousandths);
+      totalDiscount += (contributionSize * membersAddresses.length) - lowestBid;
+      members[winnerAddress].credit += lowestBid - ((lowestBid / 1000) * serviceFeeInThousandths);
       members[winnerAddress].paid = true;
       LogRoundFundsReleased(winnerAddress, lowestBid);
     }
@@ -128,67 +126,13 @@ contract ROSCA {
   }
 
   /**
-   * try to send the fund to the destination from participant account
-   */
-  function sendFund (address participant ,address destination) internal returns(bool success){
-    uint amountToWithdraw = members[participant].pendingWithdrawal  ;  // use a temporary variable to avoid the receiver calling the withdraw function again before
-    if (this.balance < amountToWithdraw) amountToWithdraw = this.balance;
-    members[participant].pendingWithdrawal = members[participant].pendingWithdrawal - amountToWithdraw;
-    if (!destination.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
-      // No need to call throw here, just reset the amount owing
-      members[participant].pendingWithdrawal += amountToWithdraw;
-      return false;
-    } else {
-      LogFundsWithdrawal(participant, amountToWithdraw, destination);
-      return true;
-    }
-  }
-
-  /**
-   * When the ROSCA ends and there is no more ether in the contract,
-   * selfdestruct to cleanUp the contract
-   */
-  function cleanUp() {
-    if(!endOfROSCA || this.balance > 0) throw;
-    selfdestruct(foreman);
-  }
-
-  /**
-   * Anyone not already a member of ROSCA can request to join and they'll be put into
-   * pendingJoinRequest until foreman accepts requests or ROSCA has started
-   */
-  function joinRequest() onlyBeforeStart {
-    // only put the request in the pending list if they are not in the ROSCA already
-    if (members[msg.sender].alive) throw;
-    pendingJoinRequest[msg.sender] = true;
-    LogParticipantApplied(msg.sender);
-  }
-
-  /**
-   * foreman can call this method to approve a join request by a participant
-   * once a requestor had been registered as member, the address will be taken out of pendingJoinRequest
-   */
-  function acceptJoinRequest(address requestor)
-    onlyForeman
-    onlyBeforeStart {
-    if (!pendingJoinRequest[requestor]) throw;
-    addMember(requestor);
-    LogParticipantApproved(requestor);
-    delete(pendingJoinRequest[requestor]); // take out the requestor's address in the pending list
-  }
-
-  /**
    * Processes a periodic contribution from msg.sender ().
    * Any excess funds will be withdrawable through withdraw().
    */
   function contribute() payable {
     if (!members[msg.sender].alive || currentRound == 0 || endOfROSCA) throw;
-    members[msg.sender].contributed += msg.value;
-    if (members[msg.sender].contributed > contributionSize * membersAddresses.length) {
-      uint excessContribution = members[msg.sender].contributed - (contributionSize * membersAddresses.length);
-      members[msg.sender].contributed -= excessContribution;
-      members[msg.sender].pendingWithdrawal += excessContribution;
-    }
+    members[msg.sender].credit += msg.value;
+
     LogContributionMade(msg.sender, msg.value);
   }
 
@@ -200,8 +144,9 @@ contract ROSCA {
     if (bidInWei >= lowestBid ||
         members[msg.sender].paid  ||
         currentRound == 0 ||
-        members[msg.sender].contributed / contributionSize < currentRound ||
-        bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT) throw;
+        members[msg.sender].credit - (currentRound * contributionSize) - (totalDiscount / membersAddresses.length) < 0 ||
+        bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT)
+      throw;
     lowestBid = bidInWei;
     winnerAddress = msg.sender;
     LogNewLowestBid(lowestBid, winnerAddress);
@@ -214,8 +159,27 @@ contract ROSCA {
   function withdraw(address opt_destination) returns(bool success) {
     if (opt_destination == 0)
       opt_destination = msg.sender;
-    if (!members[msg.sender].alive || members[msg.sender].pendingWithdrawal == 0 || currentRound == 0) throw;
-    return sendFund(msg.sender, opt_destination);
+    if (!members[msg.sender].alive) throw;
+
+    uint totalCredit = members[msg.sender].credit + totalDiscount / membersAddresses.length;
+    uint totalDebit = currentRound * contributionSize;
+    if (totalDebit >= totalCredit) {
+        throw;
+    }
+    uint amountToWithdraw = totalCredit - totalDebit;
+
+    if (this.balance < amountToWithdraw) { // this should never happen
+      LogCannotWithdrawFully(amountToWithdraw,this.balance);
+      amountToWithdraw = this.balance;
+    }
+    members[msg.sender].credit -= amountToWithdraw;
+    if (!opt_destination.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
+      // No need to call throw here, just reset the amount owing
+      members[msg.sender].credit += amountToWithdraw;
+      return false;
+    } else {
+      LogFundsWithdrawal(msg.sender, amountToWithdraw, opt_destination);
+      return true;
+    }
   }
 }
-
