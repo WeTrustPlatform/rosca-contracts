@@ -138,7 +138,7 @@ contract ROSCA {
       // Also - lowestBid was initialized to 1 + pot size in startRound(). Fix that.
       lowestBid--;
     }
-    totalDiscounts += contributionSize - lowestBid;
+    totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
     members[winnerAddress].credit += lowestBid - ((lowestBid / 1000) * serviceFeeInThousandths);
     members[winnerAddress].paid = true;
     LogRoundFundsReleased(winnerAddress, lowestBid);
@@ -167,8 +167,10 @@ contract ROSCA {
    */
   function bid(uint bidInWei) {
     if (members[msg.sender].paid  ||
-        currentRound == 0 ||
-        members[msg.sender].credit - (currentRound * contributionSize) - (totalDiscounts / membersAddresses.length) < 0 ||
+        currentRound == 0 ||  // ROSCA hasn't started yet
+        // participant not in good standing
+        members[msg.sender].credit + (totalDiscounts / membersAddresses.length) < (currentRound * contributionSize) ||
+        // bid is less than minimum allowed
         bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT)
       throw;
     if (bidInWei >= lowestBid) {
