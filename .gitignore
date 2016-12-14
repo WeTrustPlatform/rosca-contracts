@@ -1,8 +1,8 @@
 # dirs
-.idea/
-build/
-contracts/*Test.sol
-node_modules/
+/.idea/
+/build/
+/contracts/*Test.sol
+/node_modules/
 
 # files
 /.project
