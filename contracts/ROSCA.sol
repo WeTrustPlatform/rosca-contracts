@@ -35,37 +35,40 @@ contract ROSCA {
   event LogUnsuccessfulBid(address bidder,uint256 bidInWei,uint256 lowestBid);
 
   // ROSCA parameters
-  uint16 internal /* publicForTesting */ roundPeriodInDays;
-  uint16 internal /* publicForTesting */ serviceFeeInThousandths;
-  uint16 internal /* publicForTesting */ currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
-  address internal /* publicForTesting */ foreman;
-  uint128 internal /* publicForTesting */ contributionSize;
-  uint256 internal /* publicForTesting */ startTime;
+  uint16 internal roundPeriodInDays;
+  uint16 internal serviceFeeInThousandths;
+  uint16 internal currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
+  address internal foreman;
+  uint128 internal contributionSize;
+  uint256 internal startTime;
 
   // ROSCA state
-  bool internal /* publicForTesting */ endOfROSCA = false;
-  uint256 internal /* publicForTesting */ totalDiscounts; // a discount is the difference between a winning bid and the pot value
+  bool internal endOfROSCA = false;
+  uint256 internal totalDiscounts; // a discount is the difference between a winning bid and the pot value
 
   // Round state
-  uint256 internal /* publicForTesting */ lowestBid;
-  address internal /* publicForTesting */ winnerAddress;
+  uint256 internal lowestBid;
+  address internal winnerAddress;
 
-  mapping(address => User) internal /* publicForTesting */ members;
-  address[] internal /* publicForTesting */ membersAddresses;    // for  iterating through members' addresses
+  mapping(address => User) internal members;
+  address[] internal membersAddresses;    // for  iterating through members' addresses
 
   struct User {
     uint256 credit;  // amount of funds user has contributed so far
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
   }
+
   modifier onlyFromMember {
     if (!members[msg.sender].alive) throw;
     _;
   }
+
   modifier notEnded {
     if (endOfROSCA) throw;
     _;
   }
+
   /**
     * Creates a new ROSCA and initializes the necessary variables. ROSCA starts after startTime.
     * Creator of the contract becomes foreman and a participant.
@@ -95,7 +98,7 @@ contract ROSCA {
     }
   }
 
-  function addMember(address newMember) internal /* publicForTesting */ {
+  function addMember(address newMember) internal {
     if (members[newMember].alive) throw;
     members[newMember] = User({paid: false , credit: 0, alive: true});
     membersAddresses.push(newMember);
@@ -105,7 +108,7 @@ contract ROSCA {
     * Calculates the winner of the current round's pot, and credits her.
     * If there were no bids during the round, winner is selected semi-randomly.
     */
-  function startRound() notEnded {
+  function startRound() notEnded external {
     uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInDays * 1 days);
     if (now < roundStartTime )  // too early to start a new round.
       throw;
@@ -126,7 +129,7 @@ contract ROSCA {
     }
   }
 
-  function cleanUpPreviousRound() internal /* publicForTesting */ {
+  function cleanUpPreviousRound() internal {
     if (winnerAddress == 0) {
       // There is no bid in this round. Find an unpaid address for this epoch.
       uint256 semi_random = now % membersAddresses.length;
@@ -157,7 +160,7 @@ contract ROSCA {
    *
    * Any excess funds are withdrawable through withdraw().
    */
-  function contribute() payable onlyFromMember notEnded {
+  function contribute() payable onlyFromMember notEnded external {
     members[msg.sender].credit += msg.value;
 
     LogContributionMade(msg.sender, msg.value);
@@ -171,7 +174,7 @@ contract ROSCA {
    *   plus earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bidInWei) {
+  function bid(uint256 bidInWei) external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
@@ -194,7 +197,7 @@ contract ROSCA {
    * Withdraws available funds for msg.sender. If opt_destination is nonzero,
    * sends the fund to that address, otherwise sends to msg.sender.
    */
-  function withdraw() onlyFromMember returns(bool success) {
+  function withdraw() onlyFromMember external returns(bool success) {
     uint256 totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
     uint256 totalDebit = currentRound * contributionSize;
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
