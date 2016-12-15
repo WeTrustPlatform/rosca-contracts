@@ -137,7 +137,7 @@ contract ROSCA {
         address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
         if (!members[candidate].paid &&
             members[candidate].credit + (totalDiscounts / membersAddresses.length) >= (currentRound * contributionSize)) { // check if the member is in good standing
-          winnerAddress = membersAddresses[(semi_random + i) % membersAddresses.length];
+          winnerAddress = membersAddresses[candidate];
           break;
         }
       }
