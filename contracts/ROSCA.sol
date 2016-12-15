@@ -38,7 +38,7 @@ contract ROSCA {
   uint16 internal roundPeriodInDays;
   uint16 internal serviceFeeInThousandths;
   uint16 internal currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
-  address internal foreman;
+  address internal foreperson;
   uint128 internal contributionSize;
   uint256 internal startTime;
 
@@ -64,14 +64,24 @@ contract ROSCA {
     _;
   }
 
-  modifier notEnded {
+  modifier onlyFromForeperson {
+    if (msg.sender != foreperson) throw;
+    _;
+  }
+
+  modifier roscaNotEnded {
     if (endOfROSCA) throw;
+    _;
+  }
+
+  modifier roscaEnded {
+    if (!endOfROSCA) throw;
     _;
   }
 
   /**
     * Creates a new ROSCA and initializes the necessary variables. ROSCA starts after startTime.
-    * Creator of the contract becomes foreman and a participant.
+    * Creator of the contract becomes foreperson and a participant.
     */
   function ROSCA (
     uint16 roundPeriodInDays_,
@@ -90,7 +100,7 @@ contract ROSCA {
     if (serviceFeeInThousandths_ > MAX_FEE_IN_THOUSANDTHS) throw;
     serviceFeeInThousandths = serviceFeeInThousandths_;
 
-    foreman = msg.sender;
+    foreperson = msg.sender;
     addMember(msg.sender);
 
     for (uint16 i = 0; i < members_.length; i++) {
@@ -108,7 +118,7 @@ contract ROSCA {
     * Calculates the winner of the current round's pot, and credits her.
     * If there were no bids during the round, winner is selected semi-randomly.
     */
-  function startRound() notEnded external {
+  function startRound() roscaNotEnded external {
     uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInDays * 1 days);
     if (now < roundStartTime )  // too early to start a new round.
       throw;
@@ -160,7 +170,7 @@ contract ROSCA {
    *
    * Any excess funds are withdrawable through withdraw().
    */
-  function contribute() payable onlyFromMember notEnded external {
+  function contribute() payable onlyFromMember roscaNotEnded external {
     members[msg.sender].credit += msg.value;
 
     LogContributionMade(msg.sender, msg.value);
@@ -217,5 +227,17 @@ contract ROSCA {
     LogFundsWithdrawal(msg.sender, amountToWithdraw);
     return true;
   }
-}
 
+  /**
+   * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one 
+   * roundPeriodInDays after the end of the ROSCA.
+   * The contract is deleted from the blockchain at this stage.
+   * TODO(ron): change this logic once we introduce fees.
+   * TODO(ron): add tests once Shine's testing PRs get pushed.
+   */
+  function endROSCARetrieveFunds() onlyFromForeperson roscaEnded external {
+    uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
+    if (now < roscaCollectionTime) throw;
+    selfdestruct(foreperson);
+  }
+}
