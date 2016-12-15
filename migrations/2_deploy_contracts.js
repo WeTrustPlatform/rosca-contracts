@@ -4,7 +4,7 @@ module.exports = function(deployer) {
 
   var latestBlock = web3.eth.getBlock("latest");
   simulatedTimeNow = latestBlock.timestamp; // timestamp of the latest block in testrpc
-  deployer.deploy(ROSCAtest, 3, 1e16 , simulatedTimeNow + (86400 + 10) ,
+  deployer.deploy(ROSCA, 3, 1e16 , simulatedTimeNow + (86400 + 10) ,
       [accounts[1],accounts[2],accounts[3]]
       , 2);
 };
