@@ -1,5 +1,10 @@
 var co = require("co").wrap;
-contract('ROSCA addMember Unit test', function(accounts) {
+contract('ROSCA addMember Unit Test', function(accounts) {
+
+    const CONTRIBUTION_SIZE = 1e16;
+    const ROUND_PERIOD_IN_DAYS = 3;
+    const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
+    const SERVICE_FEE = 2;
 
     it("throws when adding an existing member", function () {
         var rosca = ROSCATest.deployed();
@@ -11,13 +16,24 @@ contract('ROSCA addMember Unit test', function(accounts) {
         });
     });
 
-    it("check if membersAddresses.length goes up by 1 after calling", co(function *() {
-        var rosca = ROSCATest.deployed();
+    it("checks member get added properly", co(function *() {
+        var latestBlock = web3.eth.getBlock("latest");
+        var simulatedTimeNow = latestBlock.timestamp;
+        var DayFromNow = simulatedTimeNow + 86400 + 10;
 
+        var rosca = yield ROSCATest.new(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, DayFromNow, MEMBER_LIST, SERVICE_FEE);
+
+        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE}).then(function() {
+            assert.isNotOk(true, "expected calling contribute from non-member to throw");
+        }).catch(function(e) {
+            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+        });
         yield rosca.addMember(accounts[4]);
-        var memberAddresses = yield rosca.membersAddresses.call(4);
-        var member = yield rosca.members.call(accounts[4]);
-        yield assert.equal(memberAddresses, accounts[4], "member's address didn't get registered properly");
-        yield assert.isOk(member[2], "member.alive didn't get registered properly");
+        yield rosca.contribute({from: accounts[4], value: CONTRIBUTION_SIZE});
+
+        var user = yield rosca.members.call(accounts[4]);
+
+        assert.equal(user[0], CONTRIBUTION_SIZE, "newly added member couldn't contribute"); // user.credit
+
     }));
 });
