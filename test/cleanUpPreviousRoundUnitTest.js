@@ -118,6 +118,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
         assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT * FEE, "lowestBid is not deposited into winner's credit"); // winner.credit
-        assert.isOk(winner[3], "a non member was chosen when there were no bids")
+        assert.isOk(winner[2], "a non member was chosen when there were no bids");
     }));
 });
