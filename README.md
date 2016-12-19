@@ -1,11 +1,11 @@
-``` npm install bluebird ```
+# An implementation of [ROSCA](https://en.wikipedia.org/wiki/Rotating_savings_and_credit_association) over Ethereum.
 
-``` npm install co ```
+## Running tests
 
-run testrpc:
+Run testrpc:
 
- ``` cat testrpc_command.txt ```
-
-run shell script: 
+```./testrpc_command.sh```
+ 
+In another terminal, run shell script: 
 
 ``` tools/build/run-test.sh```
