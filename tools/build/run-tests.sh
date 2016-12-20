@@ -9,5 +9,5 @@ runCommand() {
 runCommand ./tools/build/publicizer.py contracts/ROSCA.sol
 
 runCommand truffle compile
-runCommand truffle migrate --rest
+runCommand truffle migrate --reset
 runCommand truffle test
