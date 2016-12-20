@@ -1,6 +1,9 @@
 var co = require("co").wrap;
-contract('ROSCA addMember Unit Test', function(accounts) {
+var chai = require('chai'),
+    expect = chai.expect,
+    assert = chai.assert;
 
+contract('ROSCA addMember Unit Test', function(accounts) {
     const CONTRIBUTION_SIZE = 1e16;
     const ROUND_PERIOD_IN_DAYS = 3;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];

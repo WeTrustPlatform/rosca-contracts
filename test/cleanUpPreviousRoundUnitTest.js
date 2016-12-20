@@ -1,5 +1,8 @@
 var Promise = require("bluebird");
 var co = require("co").wrap;
+var chai = require('chai'),
+    expect = chai.expect,
+    assert = chai.assert;
 
 contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     const MIN_START_DELAY = 86400 + 20;

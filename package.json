@@ -14,7 +14,8 @@
     "truffle": "^3.0.0-4"
   },
   "devDependencies": {
-    "bluebird": "^3.4.6"
+    "bluebird": "^3.4.6",
+    "chai": "^3.5.0"
   },
   "scripts": {
     "test": "truffle test"
