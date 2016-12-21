@@ -213,7 +213,7 @@ contract ROSCA {
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
     uint256 amountToWithdraw = totalCredit - totalDebit;
 
-    if (this.balance < amountToWithdraw) { // this should never happen, indicates a bug
+    if (this.balance < amountToWithdraw) {
       LogCannotWithdrawFully(amountToWithdraw, this.balance);
       amountToWithdraw = this.balance;  // Let user withdraw the funds into a safe place
     }

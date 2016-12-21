@@ -4,15 +4,16 @@ var chai = require('chai'),
     expect = chai.expect,
     assert = chai.assert;
 
+
 contract('ROSCA startRound Unit Test', function(accounts) {
     const MIN_START_DELAY = 86400 + 60;
     const ROUND_PERIOD_DELAY = 86400 * 3;
-    const MEMBER_COUNT = 4;
     const CONTRIBUTION_SIZE = 1e16;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
 
     const ROUND_PERIOD_IN_DAYS = 3;
     const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
+    const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const SERVICE_FEE = 2;
 
     it("watches for LogstartOfRound event", co(function *() {
