@@ -232,8 +232,11 @@ contract ROSCA {
    * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one 
    * roundPeriodInDays after the end of the ROSCA.
    * The contract is deleted from the blockchain at this stage.
+   *
+   * Note that startRound() must be called first after the last round, as it
+   * does the bookeeping of that round.
+   * 
    * TODO(ron): change this logic once we introduce fees.
-   * TODO(ron): add tests once Shine's testing PRs get pushed.
    */
   function endROSCARetrieveFunds() onlyFromForeperson roscaEnded external {
     uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
