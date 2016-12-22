@@ -87,5 +87,11 @@
     "yui"           : false,    // Yahoo User Interface
 
     // Custom Globals
-    "globals"       : {}        // additional predefined global variables
+    "globals"       : {
+        "contract": false,
+        "ROSCA": false,
+        "ROSCATest": false,
+        "web3": false
+        
+    }        // additional predefined global variables
 }
