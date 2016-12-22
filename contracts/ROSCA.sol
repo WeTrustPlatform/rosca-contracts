@@ -10,20 +10,20 @@ pragma solidity ^0.4.4;
  * evenly between the participants.
  */
 contract ROSCA {
-  uint64 constant MIN_CONTRIBUTION_SIZE = 1 finney;  // 1e-3 ether
-  uint128 constant MAX_CONTRIBUTION_SIZE = 10 ether;
+  uint64 constant internal MIN_CONTRIBUTION_SIZE = 1 finney;  // 1e-3 ether
+  uint128 constant internal MAX_CONTRIBUTION_SIZE = 10 ether;
 
   // Maximum fee (in 1/1000s) from dispersements that goes to project stakeholders.
-  uint16 constant MAX_FEE_IN_THOUSANDTHS = 20;
+  uint16 constant internal MAX_FEE_IN_THOUSANDTHS = 20;
 
   // startTime of the ROSCA must be at least this much time ahead of when the ROSCA is created
-  uint32 constant MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;
+  uint32 constant internal MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;
 
-  uint8 constant MIN_ROUND_PERIOD_IN_DAYS = 1;
-  uint8 constant MAX_ROUND_PERIOD_IN_DAYS = 30;
-  uint8 constant MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
+  uint8 constant internal MIN_ROUND_PERIOD_IN_DAYS = 1;
+  uint8 constant internal MAX_ROUND_PERIOD_IN_DAYS = 30;
+  uint8 constant internal MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
 
-  address constant WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
+  address constant internal WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
 
   event LogContributionMade(address user, uint256 amount);
   event LogStartOfRound(uint256 currentRound);
