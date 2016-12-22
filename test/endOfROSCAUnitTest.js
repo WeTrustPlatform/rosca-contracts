@@ -73,7 +73,7 @@ contract('end of ROSCA unit test', function(accounts) {
       // we do not call yield rosca.startRound() here
       utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
       
-      yield utils.expectThrow(
+      yield utils.assertThrows(
         rosca.endROSCARetrieveFunds({from: accounts[0]}),
         "expected calling endROSCARetrieveFunds w/o calling startRound() to throw");
     }));
@@ -84,7 +84,7 @@ contract('end of ROSCA unit test', function(accounts) {
       yield rosca.startRound();
       utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
       
-      yield utils.expectThrow(
+      yield utils.assertThrows(
         rosca.endROSCARetrieveFunds({from: accounts[1]}),
           "expected calling endROSCARetrieveFunds before ROSCDA end time + one round to throw");
     }));
@@ -95,7 +95,7 @@ contract('end of ROSCA unit test', function(accounts) {
       yield rosca.startRound();  
       // We're not waiting another round this time.
       
-      yield utils.expectThrow(
+      yield utils.assertThrows(
           rosca.endROSCARetrieveFunds({from: accounts[0]}),
           "expected calling endROSCARetrieveFunds before ROSCDA end time");
     }));

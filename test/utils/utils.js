@@ -12,7 +12,7 @@ module.exports = {
     });
   },
     
-  expectThrow: function(promise, err) {
+  assertThrows: function(promise, err) {
     return promise.then(function() {
       assert.isNotOk(true, err);
     }).catch(function (e) {
