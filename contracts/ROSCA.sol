@@ -170,7 +170,7 @@ contract ROSCA {
    *
    * Any excess funds are withdrawable through withdraw().
    */
-  function contribute() payable onlyFromMember roscaNotEnded external {
+  function contribute() payable onlyFromMember external {
     members[msg.sender].credit += msg.value;
 
     LogContributionMade(msg.sender, msg.value);

@@ -68,11 +68,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
             });
             yield rosca.startRound();
         }
-        // checks if endOfROSCA has been set to true by calling contribute which should throw
-        yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}).then(function() {
-            assert.isNotOk(true, "Calling contribute after ROSCA ended was expected to throw");
-        }).catch(function(e) {
-            assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
-        });
+        
+        assert.isOk(yield rosca.endOfROSCA.call());  // Unfortunately, we need to check the internal var directly.
     }));
 });
