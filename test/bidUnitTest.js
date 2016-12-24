@@ -113,7 +113,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         });
         yield rosca.startRound();
 
-        var credit = yield rosca.members.call(accounts[2])[0];
+        var credit = (yield rosca.members.call(accounts[2]))[0];
         var expected_credit = CONTRIBUTION_SIZE + (BID_TO_PLACE * FEE);
 
         assert.equal(credit, expected_credit, "bid placed didn't affect winner's credit");
@@ -180,7 +180,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         });
         yield rosca.startRound();
 
-        var credit = yield rosca.members.call(accounts[1])[0];
+        var credit = (yield rosca.members.call(accounts[1]))[0];
         var expected_credit = CONTRIBUTION_SIZE + (DEFAULT_POT * FEE);
 
         assert.notEqual(credit, expected_credit, "new higher bid won");
