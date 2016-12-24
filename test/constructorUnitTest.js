@@ -71,7 +71,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         });
     }));
 
-    it("Throws if MINIMUM_TIME_BEFORE_ROSCA_START < 1 day", function() {
+    it("Throws if MINIMUM_TIME_BEFORE_ROSCA_START < 1 day", co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
         var simulatedTimeNow = latestBlock.timestamp;
 
@@ -84,7 +84,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         }).catch(function(e) {
             assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
         });
-    });
+    }));
 
     it("Throws if feeInThousandths > MAX_FEE_IN_THOUSANTHS" , co(function *() {
         var latestBlock = web3.eth.getBlock("latest");
