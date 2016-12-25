@@ -18,7 +18,7 @@
     "chai": "^3.5.0"
   },
   "scripts": {
-    "test": "truffle test"
+    "test": "./tools/build/run-testrpc-and-tests.sh"
   },
   "repository": {
     "type": "git",
