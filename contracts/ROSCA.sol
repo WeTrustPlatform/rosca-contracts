@@ -22,6 +22,8 @@ contract ROSCA {
   uint8 constant internal MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint8 constant internal MAX_ROUND_PERIOD_IN_DAYS = 30;
   uint8 constant internal MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
+  
+  uint8 constant internal MAX_NEXT_BID_RATIO = 98;  // Means every new bid has to be at least 2% less than the one before
 
   address constant internal WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
 
@@ -127,9 +129,7 @@ contract ROSCA {
       cleanUpPreviousRound();
     }
     if (currentRound < membersAddresses.length) {
-      // We reset to one more than the pot, so that participants can bid the actual
-      // pot size.
-      lowestBid = contributionSize * membersAddresses.length + 1;
+      lowestBid = 0;
       winnerAddress = 0;
 
       currentRound++;
@@ -151,8 +151,8 @@ contract ROSCA {
           break;
         }
       }
-      // Also - lowestBid was initialized to 1 + pot size in startRound(). Fix that.
-      lowestBid--;
+      // Also - set lowestBid to the right value.
+      lowestBid = contributionSize * membersAddresses.length;
     }
     if (winnerAddress == 0) { // no potential winner
       LogRoundNoWinner(currentRound);
@@ -190,9 +190,15 @@ contract ROSCA {
         // participant not in good standing
         members[msg.sender].credit + (totalDiscounts / membersAddresses.length) < (currentRound * contributionSize) ||
         // bid is less than minimum allowed
-        bidInWei < ((contributionSize * membersAddresses.length)/100) * MIN_DISTRIBUTION_PERCENT)
+        bidInWei < ((contributionSize * membersAddresses.length) / 100) * MIN_DISTRIBUTION_PERCENT)
       throw;
-    if (bidInWei >= lowestBid) {
+    
+    // If winnerAddress is 0, this is the first bid, hence allow full pot.
+    // Otherwise, make sure bid is lower enough compared to previous bid.
+    uint256 maxAllowedBid = (winnerAddress == 0 ? 
+        contributionSize * membersAddresses.length : 
+        lowestBid / 100 * MAX_NEXT_BID_RATIO);
+    if (bidInWei > maxAllowedBid) {
       // We don't throw as this may be hard for the frontend to predict on the
       // one hand, and would waste the caller's gas on the other.
       LogUnsuccessfulBid(msg.sender, bidInWei, lowestBid);
