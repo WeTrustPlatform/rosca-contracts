@@ -207,7 +207,6 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     
     Promise.all([
       contribute(0, CONTRIBUTION_SIZE),  // p0's credit == 1.95C + C == 2.95C
-      contribute(1, CONTRIBUTION_SIZE),  // p1's credit == 2.85C + C == 3.85C
       // p2 does not contribute this time.  p2's credit == 1.95C
       // p3 is still missing a contribution from last period, so still not in good standing
       contribute(3, CONTRIBUTION_SIZE),  // p3's credit == C + C == 2C
@@ -224,24 +223,35 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // Note that all credits are actually 3C more than participants can draw (neglecting totalDiscounts).
     // p0 gets the rewards of P * NR = 4C * 0.99 = 3.96C. Adding to his 2.95C == 6.91C
     assert.equal(contract.credits[0], 6.91 * CONTRIBUTION_SIZE); 
-    assert.equal(contract.credits[1], 3.85 * CONTRIBUTION_SIZE);
+    assert.equal(contract.credits[1], 2.85 * CONTRIBUTION_SIZE);
     assert.equal(contract.credits[2], 1.95 * CONTRIBUTION_SIZE); // not in good standing
     assert.equal(contract.credits[3], 2 * CONTRIBUTION_SIZE); // not in good standing
     assertWeiCloseTo(contract.totalDiscounts, 0.6 * CONTRIBUTION_SIZE);  // The entire pot was won, TD does not change,
 
-    // Last we checked contractBalance (in this test) it was 0.424C. With 3 contributions of C each, we get to 3.424C.
-    assert.equal(contract.balance, 3.424 * CONTRIBUTION_SIZE);
+    // Last we checked contractBalance (in this test) it was 0.424C. With 2 contributions of C each, we get to 2.424C.
+    assert.equal(contract.balance, 2.424 * CONTRIBUTION_SIZE);
     
     assert.equal(contract.currentRound, 4); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
   }));
   
-  it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing", 
+  it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing," +
+      " p0 tries to withraw more than contract's balance",
       co(function*() {
-    // p0 neither withdraws his winnings not contributes.
+    // p0's credit is = 6.91C
+    // This is the 4th round, so they need the following to hold:
+    // newCredit + TD / MC == 4C => newCredit == 4C - TD / MC == 4C - 0.15 * 4C / 4 == 3.85C.
+    // They should be able thus to withdraw 6.91C - 3.85C == 3.06C.
+    // Since contract's balance is only 2.424, p0's credit after withdraw 6.91C - 2.424C == 4.486C
+    let contractBalanceBefore = contractBalance();
+    yield withdraw(0);
+    assert.equal(contractBalanceBefore - contractBalance(), 2.424 * CONTRIBUTION_SIZE);
+    assert.equal((yield getContractStatus()).credits[0], 4.486 * CONTRIBUTION_SIZE);
+    // Contract would be left with 2.424C (last balance) - 2.424C (just withdraw) = 0.0C
+    assert.equal(contractBalance(), 0);
+
     Promise.all([
-      contribute(0, CONTRIBUTION_SIZE),  // p0's credit == 6.91C + C == 7.91C
-      contribute(1, CONTRIBUTION_SIZE),  // p1's credit == 3.85C + C == 4.85C
+      contribute(1, CONTRIBUTION_SIZE),  // p1's credit == 2.85C + C == 3.85C
       // p2 does not contribute this time.  p2's credit == 1.95C
       // p3 is still missing a contribution from 2nd period, so still not in good standing
       contribute(3, CONTRIBUTION_SIZE),  // p3's credit == 2C + C == 3C
@@ -263,15 +273,15 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
     // Note that all credits are actually 3C more than participants can draw (neglecting totalDiscounts).
     // p0 gets the rewards of P * NR = 4C * 0.99 = 3.96C. Adding to his 2.95C == 6.91C
-    assert.equal(contract.credits[0], 7.91 * CONTRIBUTION_SIZE); 
-    assert.equal(contract.credits[1], 4.85 * CONTRIBUTION_SIZE);
+    assert.equal(contract.credits[0], 4.486 * CONTRIBUTION_SIZE);
+    assert.equal(contract.credits[1], 3.85 * CONTRIBUTION_SIZE);
     assert.equal(contract.credits[2], 1.95 * CONTRIBUTION_SIZE); // not in good standing
     assert.equal(contract.credits[3], 3 * CONTRIBUTION_SIZE); // not in good standing
     // The entire pot was won, TD does not change
     assertWeiCloseTo(contract.totalDiscounts, DEFAULT_POT * (0.10 + 0.05));
 
     // Last we checked contractBalance (in this test) it was 3.424C. With 3 contributions of C each, we get to 6.424C.
-    assert.equal(contract.balance, 6.424 * CONTRIBUTION_SIZE);
+    assert.equal(contract.balance, 2 * CONTRIBUTION_SIZE);
     
     assert.equal(contract.currentRound, 4); // currentRound value
     // End of Rosca has been reached
@@ -283,22 +293,16 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // totalDiscounts would be 0.15C. 
     // Therefore everyone's credit should be 3.85C to be in good standing.
     // Amounts withdrawable:
-    // p0: 7.91C - 3.85C == 4.06C
-    // p1: 4.85C - 3.85C == 1C
+    // p0: 4.486C - 3.85C == 0.636C
+    // p1: 3.85C - 3.85C == 0C
     // p2: nothing (still owes 1.9C)
     // p3: nothing (still owes 0.85C, even though has not won any round)
     
-    // Let p0 and p1 withdraw.
+    // Let p0 withdraw.
     let contractBalanceBefore = contractBalance();
     yield withdraw(0);
-    assert.equal(contractBalanceBefore - contractBalance(), 4.06 * CONTRIBUTION_SIZE);
+    assert.equal(contractBalanceBefore - contractBalance(), 0.636 * CONTRIBUTION_SIZE);
     assert.equal((yield getContractStatus()).credits[0], 3.85 * CONTRIBUTION_SIZE);
-
-    contractBalanceBefore = contractBalance();
-    yield withdraw(1);
-    assert.equal(contractBalanceBefore - contractBalance(), 1 * CONTRIBUTION_SIZE);
-    assert.equal((yield getContractStatus()).credits[1], 3.85 * CONTRIBUTION_SIZE);
-    // Contract would be left with 6.424C (last balance) - (4.06 + 1)C == 1.364C
     assertWeiCloseTo(contractBalance(), 1.364 * CONTRIBUTION_SIZE);
     
     // p2 who owes 1.9C contributes 2C and gets back 0.1C
