@@ -29,6 +29,10 @@ contract ROSCA {
   // used in tests.
   address constant internal FEE_ADDRESS = 0x1df62f291b2e969fb0849d99d9ce41e2f137006e;
 
+  // TODO(ron): replace this with an actual wallet. Right now this is accounts[9] of the testrpc used
+  // by tests.
+  address constant internal ESCAPE_HATCH_ENABLER = 0x1df62f291b2e969fb0849d99d9ce41e2f137006e;
+
   event LogContributionMade(address user, uint256 amount);
   event LogStartOfRound(uint256 currentRound);
   event LogNewLowestBid(uint256 bid,address winnerAddress);
@@ -37,6 +41,11 @@ contract ROSCA {
   event LogFundsWithdrawal(address user, uint256 amount);
   event LogCannotWithdrawFully(uint256 requestedAmount,uint256 contractBalance);
   event LogUnsuccessfulBid(address bidder,uint256 bidInWei,uint256 lowestBid);
+
+  // Escape hatch related events.
+  event LogEscapeHatchEnabled();
+  event LogEscapeHatchActivated();
+  event LogEmergencyWithdrawalPerformed(uint256 fundsDispersed);
 
   // ROSCA parameters
   uint16 internal roundPeriodInDays;
@@ -58,6 +67,17 @@ contract ROSCA {
 
   mapping(address => User) internal members;
   address[] internal membersAddresses;    // for  iterating through members' addresses
+
+  // Other state
+  // An escape hatch is used in case a major vulnerability is discovered in the contract code.
+  // The following procedure is then put into action:
+  // 1. WeTrust sends a transaction to make escapeHatchEnabled true.
+  // 2. foreperson is notified and can decide to activate the escapeHatch.
+  // 3. If escape hatch is activated, no contributions and/or withdrawals are allowed. The foreperson
+  //    may call withdraw() to withdraw all of the contract's funds and then disperse them offline
+  //    among the participants.
+  bool internal escapeHatchEnabled = false;
+  bool internal escapeHatchActive = false;
 
   struct User {
     uint256 credit;  // amount of funds user has contributed so far
@@ -87,6 +107,21 @@ contract ROSCA {
 
   modifier roscaEnded {
     if (!endOfROSCA) throw;
+    _;
+  }
+
+  modifier onlyIfEscapeHatchActive {
+    if (!escapeHatchActive) throw;
+    _;
+  }
+
+  modifier onlyIfEscapeHatchInactive {
+    if (escapeHatchActive) throw;
+    _;
+  }
+
+  modifier onlyFromEscapeHatchEnabler {
+    if (msg.sender != ESCAPE_HATCH_ENABLER) throw;
     _;
   }
 
@@ -179,7 +214,7 @@ contract ROSCA {
    *
    * Any excess funds are withdrawable through withdraw().
    */
-  function contribute() payable onlyFromMember external {
+  function contribute() payable onlyFromMember onlyIfEscapeHatchInactive external {
     members[msg.sender].credit += msg.value;
     // TODO(ron): this has a bad edge case: it will take fees of any excessive contributions made.
     // Fix this once we switch to the contributions/winnings model.
@@ -196,7 +231,7 @@ contract ROSCA {
    *   plus earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bidInWei) external {
+  function bid(uint256 bidInWei) onlyIfEscapeHatchInactive external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
@@ -225,7 +260,7 @@ contract ROSCA {
    * Withdraws available funds for msg.sender. If opt_destination is nonzero,
    * sends the fund to that address, otherwise sends to msg.sender.
    */
-  function withdraw() onlyFromMember external returns(bool success) {
+  function withdraw() onlyFromMember onlyIfEscapeHatchInactive external returns(bool success) {
     uint256 totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
     uint256 totalDebit = currentRound * contributionSize;
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
@@ -295,5 +330,29 @@ contract ROSCA {
     } else {
       LogFundsWithdrawal(FEE_ADDRESS, totalFees);
     }
+  }
+
+  // Allows the Escape Hatch Enabler (controlled by WeTrust) to enable the Escape Hatch in case of
+  // emergency (e.g. a major vulnerability found in the contract).
+  function enableEscapeHatch() onlyFromEscapeHatchEnabler external {
+    escapeHatchEnabled = true;
+    LogEscapeHatchEnabled();
+  }
+
+  // Allows the foreperson to active the Escape Hatch after the Enabled enabled it. This will freeze all
+  // contributions and withdrawals, and allow the foreperson to retrieve all funds into their own account,
+  // to be dispersed offline to the other participants.
+  function activateEscapeHatch() onlyFromForeperson external {
+    if (!escapeHatchEnabled) {
+      throw;
+    }
+    escapeHatchActive = true;
+    LogEscapeHatchActivated();
+  }
+
+  function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive {
+    LogEmergencyWithdrawalPerformed(this.balance);
+    // Send everything, including potential fees, to foreperson to disperse offline to participants.
+    selfdestruct(foreperson);
   }
 }
