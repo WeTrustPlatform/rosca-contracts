@@ -52,7 +52,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             fundsWithdrawalEvent.stopWatching();
             eventFired = true;
             assert.equal(log.args.user, accounts[0], "LogContributionMade doesn't display proper user value");
-            assert.equal(log.args.amount, ACTUAL_CONTRIBUTION,
+            assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION / 1000 * (1000 - SERVICE_FEE_IN_THOUSANDTHS),
                 "LogContributionMade doesn't display proper amount value");
         });
 
@@ -109,12 +109,13 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
-        let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+        let contractCredit = yield utils.contractNetCredit(rosca);
 
-        // contract balance should be zero because the withdraw should've withdrawn everything
         assert.equal(contractCredit, 0);
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
-        assert.equal(creditAfter, creditBefore - withdrewAmount, "partial withdraw didn't work properly");
+        assert.equal(creditAfter, 
+        creditBefore - (withdrewAmount * 1000 / (1000 - SERVICE_FEE_IN_THOUSANDTHS)), 
+        "partial withdraw didn't work properly");
     }));
 
     it("checks withdraw when the contract balance is more than what the user is entitled to", co(function *() {
@@ -184,12 +185,13 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
-        let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+        let contractCredit = yield utils.contractNetCredit(rosca);
 
-        // contract balance should be zero because the withdraw should've withdrawn everything
         assert.equal(contractCredit, 0);
         assert.isAbove(memberBalanceAfter, memberBalanceBefore);
-        assert.equal(creditAfter, creditBefore - withdrewAmount, "partial withdraw didn't work properly");
+        assert.equal(creditAfter.toNumber(), 
+            creditBefore - withdrewAmount * 1000 / (1000 - SERVICE_FEE_IN_THOUSANDTHS), 
+            "partial withdraw didn't work properly");
     }));
 
     it("withdraw when the contract can send what the user is entitled to while totalDiscount != 0", co(function *() {

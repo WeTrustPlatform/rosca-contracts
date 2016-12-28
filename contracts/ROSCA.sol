@@ -22,10 +22,12 @@ contract ROSCA {
   uint8 constant internal MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint8 constant internal MAX_ROUND_PERIOD_IN_DAYS = 30;
   uint8 constant internal MIN_DISTRIBUTION_PERCENT = 65;  // the winning bid must be at least 65% of the Pot value
-  
+
   uint8 constant internal MAX_NEXT_BID_RATIO = 98;  // Means every new bid has to be at least 2% less than the one before
 
-  address constant internal WETRUST_FEE_ADDRESS = 0x0;           // TODO: needs to be updated
+  // TODO: MUST change this prior to production. Currently this is accounts[9] of the testrpc config
+  // used in tests.
+  address constant internal FEE_ADDRESS = 0x1df62f291b2e969fb0849d99d9ce41e2f137006e;
 
   event LogContributionMade(address user, uint256 amount);
   event LogStartOfRound(uint256 currentRound);
@@ -46,7 +48,9 @@ contract ROSCA {
 
   // ROSCA state
   bool internal endOfROSCA = false;
+  bool internal forepersonSurplusCollected = false;
   uint256 internal totalDiscounts; // a discount is the difference between a winning bid and the pot value
+  uint256 internal totalFees = 0;
 
   // Round state
   uint256 internal lowestBid;
@@ -68,6 +72,11 @@ contract ROSCA {
 
   modifier onlyFromForeperson {
     if (msg.sender != foreperson) throw;
+    _;
+  }
+
+  modifier onlyFromFeeAddress {
+    if (msg.sender != FEE_ADDRESS) throw;
     _;
   }
 
@@ -158,7 +167,7 @@ contract ROSCA {
       LogRoundNoWinner(currentRound);
     } else {
       totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
-      members[winnerAddress].credit += lowestBid - ((lowestBid / 1000) * serviceFeeInThousandths);
+      members[winnerAddress].credit += lowestBid;
       members[winnerAddress].paid = true;
       LogRoundFundsReleased(winnerAddress, lowestBid);
     }
@@ -172,6 +181,9 @@ contract ROSCA {
    */
   function contribute() payable onlyFromMember external {
     members[msg.sender].credit += msg.value;
+    // TODO(ron): this has a bad edge case: it will take fees of any excessive contributions made.
+    // Fix this once we switch to the contributions/winnings model.
+    totalFees += msg.value / 1000 * serviceFeeInThousandths;
 
     LogContributionMade(msg.sender, msg.value);
   }
@@ -192,11 +204,11 @@ contract ROSCA {
         // bid is less than minimum allowed
         bidInWei < ((contributionSize * membersAddresses.length) / 100) * MIN_DISTRIBUTION_PERCENT)
       throw;
-    
+
     // If winnerAddress is 0, this is the first bid, hence allow full pot.
     // Otherwise, make sure bid is lower enough compared to previous bid.
-    uint256 maxAllowedBid = (winnerAddress == 0 ? 
-        contributionSize * membersAddresses.length : 
+    uint256 maxAllowedBid = (winnerAddress == 0 ?
+        contributionSize * membersAddresses.length :
         lowestBid / 100 * MAX_NEXT_BID_RATIO);
     if (bidInWei > maxAllowedBid) {
       // We don't throw as this may be hard for the frontend to predict on the
@@ -217,36 +229,71 @@ contract ROSCA {
     uint256 totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
     uint256 totalDebit = currentRound * contributionSize;
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
-    uint256 amountToWithdraw = totalCredit - totalDebit;
 
-    if (this.balance < amountToWithdraw) {
-      LogCannotWithdrawFully(amountToWithdraw, this.balance);
-      amountToWithdraw = this.balance;  // Let user withdraw the funds into a safe place
+    uint256 amountToWithdraw = totalCredit - totalDebit;
+    uint256 amountAfterFee = amountToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
+
+    uint256 amountAvailable = this.balance - totalFees;
+    if (amountAvailable < amountAfterFee) {
+      // This may happen if some participants are delinquent.
+      amountAfterFee = amountAvailable;
+      LogCannotWithdrawFully(amountToWithdraw, amountAvailable);
+      amountToWithdraw = amountAvailable * 1000 / (1000 - serviceFeeInThousandths);
     }
     members[msg.sender].credit -= amountToWithdraw;
-    if (!msg.sender.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
+    if (!msg.sender.send(amountAfterFee)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       members[msg.sender].credit += amountToWithdraw;
       return false;
     }
-    LogFundsWithdrawal(msg.sender, amountToWithdraw);
+    LogFundsWithdrawal(msg.sender, amountAfterFee);
     return true;
   }
 
   /**
-   * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one 
+   * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one
    * roundPeriodInDays after the end of the ROSCA.
-   * The contract is deleted from the blockchain at this stage.
    *
    * Note that startRound() must be called first after the last round, as it
    * does the bookeeping of that round.
-   * 
-   * TODO(ron): change this logic once we introduce fees.
    */
-  function endROSCARetrieveFunds() onlyFromForeperson roscaEnded external {
+  function endOfROSCARetrieveSurplus() onlyFromForeperson roscaEnded external returns (bool) {
     uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
-    if (now < roscaCollectionTime) throw;
-    selfdestruct(foreperson);
+    if (now < roscaCollectionTime || forepersonSurplusCollected) throw;
+
+    forepersonSurplusCollected = true;
+    uint256 amountToCollect = this.balance - totalFees;
+    if (!foreperson.send(amountToCollect)) {   // if the send() fails, put the allowance back to its original place
+      // No need to call throw here, just reset the amount owing. This may happen
+      // for nonmalicious reasons, e.g. the receiving contract running out of gas.
+      forepersonSurplusCollected = false;
+      return false;
+    } else {
+      LogFundsWithdrawal(foreperson, amountToCollect);
+    }
+  }
+
+ /**
+   * Allows the foreperson to end the ROSCA and retrieve any surplus funds, one
+   * roundPeriodInDays after the end of the ROSCA.
+   *
+   * Note that startRound() must be called first after the last round, as it
+   * does the bookeeping of that round.
+   */
+  function endOfROSCARetrieveFees() onlyFromFeeAddress roscaEnded external returns (bool) {
+    uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
+    if (now < roscaCollectionTime || totalFees == 0) throw;
+
+    uint256 tempTotalFees = totalFees;  // prevent re-entry.
+    totalFees = 0;
+    if (!FEE_ADDRESS.send(tempTotalFees)) {   // if the send() fails, put the allowance back to its original place
+      // No need to call throw here, just reset the amount owing. This may happen
+      // for nonmalicious reasons, e.g. the receiving contract running out of gas.
+      totalFees = tempTotalFees;
+      return false;
+    } else {
+      LogFundsWithdrawal(FEE_ADDRESS, totalFees);
+    }
   }
 }

@@ -84,7 +84,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         yield rosca.startRound();
 
         let credit = (yield rosca.members.call(accounts[2]))[0];
-        let expectedCredit = CONTRIBUTION_SIZE + (BID_TO_PLACE * PERCENT_AFTER_FEE);
+        let expectedCredit = CONTRIBUTION_SIZE + BID_TO_PLACE;
 
         assert.equal(credit, expectedCredit, "bid placed didn't affect winner's credit");
     }));
@@ -110,7 +110,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("ignores bid higher than MAX_NEXT_BID_RATIO of the previous lowest bid" , co(function *() {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
-        
+
         const MAX_NEXT_BID_RATIO = yield (ROSCATest.deployed()).MAX_NEXT_BID_RATIO.call();
         const NOT_LOW_ENOUGH_BID_TO_PLACE = DEFAULT_POT / 100 * MAX_NEXT_BID_RATIO + 100;
 
@@ -119,21 +119,21 @@ contract('ROSCA bid Unit Test', function(accounts) {
             rosca.startRound(),
             rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[3], value: CONTRIBUTION_SIZE}),
-            
+
             rosca.bid(DEFAULT_POT, {from: accounts[1]}),
             rosca.bid(NOT_LOW_ENOUGH_BID_TO_PLACE, {from: accounts[3]})
         ]);
 
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
-      
-        let p1Credit = (yield rosca.members.call(accounts[1]))[0];
-        let expectedCredit = CONTRIBUTION_SIZE + (DEFAULT_POT * PERCENT_AFTER_FEE);
 
-        assert.equal(p1Credit.toNumber(), expectedCredit, 
+        let p1Credit = (yield rosca.members.call(accounts[1]))[0];
+        let expectedCredit = CONTRIBUTION_SIZE + DEFAULT_POT;
+
+        assert.equal(p1Credit.toNumber(), expectedCredit,
             "original bidder should have won due to insufficient gap in the second bid");
     }));
-    
+
     it("ignores higher bid" , co(function *() {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
@@ -151,11 +151,11 @@ contract('ROSCA bid Unit Test', function(accounts) {
         ]);
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
-      
+
         let p3Credit = (yield rosca.members.call(accounts[3]))[0];
-        let expectedCredit = CONTRIBUTION_SIZE + (LOWER_BID * PERCENT_AFTER_FEE);
+        let expectedCredit = CONTRIBUTION_SIZE + LOWER_BID;
 
         assert.equal(p3Credit, expectedCredit, "original lower bid should have won");
     }));
-    
+
 });

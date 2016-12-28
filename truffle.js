@@ -11,6 +11,7 @@ module.exports = {
   },
   rpc: {
     host: "localhost",
-    port: 8545
+    port: 8545,
+    gasPrice: 2e10  // keep in sync with test/utils/consts.js
   }
 };
