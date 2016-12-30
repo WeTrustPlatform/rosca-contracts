@@ -14,8 +14,8 @@
   },
   "devDependencies": {
     "bluebird": "^3.4.6",
-    "chai": "^3.5.0"
-    "ethereumjs-testrpc": "^3.0.3",
+    "chai": "^3.5.0",
+    "ethereumjs-testrpc": "^3.0.3"
   },
   "scripts": {
     "test": "./tools/build/run-testrpc-and-tests.sh"
