@@ -1,5 +1,5 @@
 {
-  "extends": "./tools/eslint/google.eslintrc.js",
+  "extends": ["eslint:recommended", "./tools/eslint/google.eslintrc.js"],
   "rules": {
     "max-len": [1, 120],  // make line length 120
     "new-cap": [2, {"capIsNewExceptionPattern": "\\.Log"}],  // enforce non-capital first letter for anything but event functions
@@ -11,8 +11,12 @@
     "ecmaVersion": 6,
   },
   "globals" : {          // additional predefined global variables
+      "before": false,
+      "beforeEach": false,
       "contract": false,
+      "it": false,
       "module": false,
+      "require": false,
       "ROSCA": false,
       "ROSCATest": false,
       "web3": false
