@@ -1,13 +1,18 @@
 {
-  "extends": "google",
+  "extends": "./tools/eslint/google.eslintrc.js",
   "rules": {
-    "max-len": [1, 120],
+    "max-len": [1, 120],  // make line length 120
+    "new-cap": [2, {"capIsNewExceptionPattern": "\\.Log"}],  // enforce non-capital first letter for anything but event functions
+    "no-unused-vars": [1, {args: 'none'}],  // make unused vars and functions only a warning
+    "quotes": [0, "single", {allowTemplateLiterals: true}],  // reaplce to 2 to prefer single quotes, but just a warning otherwise
+    "require-jsdoc": 0,  // at this point of time, we do not require jsdoc
   },
   "parserOptions": {
     "ecmaVersion": 6,
   },
   "globals" : {          // additional predefined global variables
       "contract": false,
+      "module": false,
       "ROSCA": false,
       "ROSCATest": false,
       "web3": false

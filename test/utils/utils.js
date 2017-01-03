@@ -11,14 +11,14 @@ module.exports = {
     myWeb3 = web3;
   },
 
-  assertEqualUpToGasCosts : function(actual, expected) {
+  assertEqualUpToGasCosts: function(actual, expected) {
       assert.closeTo(actual, expected, consts.MAX_GAS_COST_PER_TX);
   },
 
   assertThrows: function(promise, err) {
     return promise.then(function() {
       assert.isNotOk(true, err);
-    }).catch(function (e) {
+    }).catch(function(e) {
       assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
     });
   },
@@ -34,7 +34,7 @@ module.exports = {
         SERVICE_FEE_IN_THOUSANDTHS);
   },
 
-  contractNetCredit: function*(rosca) {
+  contractNetCredit: function* (rosca) {
     return web3.eth.getBalance(rosca.address) - (yield rosca.totalFees.call());
   },
 
@@ -48,7 +48,6 @@ module.exports = {
       }).catch(function(reason) {
         reject(reason);
       });
-
     });
   },
 
@@ -57,7 +56,7 @@ module.exports = {
       jsonrpc: "2.0",
       method: "evm_increaseTime",
       params: [bySeconds],
-      id: new Date().getTime()
+      id: new Date().getTime(),
     });
   },
 
@@ -65,7 +64,7 @@ module.exports = {
     myWeb3.currentProvider.send({
       jsonrpc: "2.0",
       method: "evm_mine",
-      id: new Date().getTime()
+      id: new Date().getTime(),
     });
   },
 };
