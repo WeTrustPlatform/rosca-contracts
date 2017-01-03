@@ -32,7 +32,7 @@ function participantInfo(member) {
 // Due to js roundoff errors, we allow values be up to a basis point off.
 function assertWeiCloseTo(actual, expected) {
   // deal with rounding errors by allowing some minimal difference of 0.1%
-  assert.closeTo(Math.abs(1 - actual / expected) , 0, 0.0001, "actual: " + actual + ",expected: " + expected);
+  assert.closeTo(Math.abs(1 - actual / expected), 0, 0.0001, "actual: " + actual + ",expected: " + expected);
 }
 
 function* getContractStatus() {
@@ -52,7 +52,7 @@ function* getContractStatus() {
     totalDiscounts: results[4].toNumber(),
     currentRound: results[5].toNumber(),
     balance: balance,
-    totalFees: results[6].toNumber()
+    totalFees: results[6].toNumber(),
   };
 }
 
@@ -81,7 +81,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
       });
   });
 
-  it("pre-ROSCA: checks rosca status is valid", co(function*() {
+  it("pre-ROSCA: checks rosca status is valid", co(function* () {
       let contract = yield getContractStatus();
 
       for (let i = 0; i < 4; ++i) {
@@ -97,10 +97,10 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
   // P is the DEFAULT_POT
   // MC is MEMBER_COUNT == 4
   // NR is NET_REWARDS
-  it("1st round: p2 wins 0.95 of the pot", co(function*() {
+  it("1st round: p2 wins 0.95 of the pot", co(function* () {
     yield Promise.all([
         contribute(0, CONTRIBUTION_SIZE * 10),  // p0's credit == 10C
-        contribute(2, CONTRIBUTION_SIZE)  // p2's credit == C
+        contribute(2, CONTRIBUTION_SIZE),  // p2's credit == C
     ]);
     utils.increaseTime(ROUND_PERIOD);
 
@@ -146,7 +146,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.isNotOk(yield rosca.endOfROSCA.call());
   }));
 
-  it("2nd round: p2, who has won previous round, and p3, who has not won yet, do not contribute", co(function*() {
+  it("2nd round: p2, who has won previous round, and p3, who has not won yet, do not contribute", co(function* () {
     // In this round, p2's credit is
     // C + P * 0.95  == C + 4C * 0.95 == 4.8C.
     // This is the 2nd round, so they need the following to hold:
@@ -199,7 +199,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.isNotOk(yield rosca.endOfROSCA.call());
   }));
 
-  it("3rd round: everyone but 2 contributes, nobody puts a bid", co(function*() {
+  it("3rd round: everyone but 2 contributes, nobody puts a bid", co(function* () {
     // 1's credit is
     // 2C + P * 0.9 == 2C + 4C * 0.9  == 5.6C.
     // This is the 3rd round, so they need the following to hold:
@@ -248,7 +248,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
   it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing," +
       " p0 tries to withraw more than contract's balance",
-      co(function*() {
+      co(function* () {
     // p0's credit is = 6.95C
     // This is the 4th round, so they need the following to hold:
     // newCredit + TD / MC == 4C => newCredit == 4C - TD / MC == 4C - 0.15 * 4C / 4 == 3.85C.
@@ -307,7 +307,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.isOk(yield rosca.endOfROSCA.call());
   }));
 
-  it("post-ROSCA", co(function*() {
+  it("post-ROSCA", co(function* () {
     // totalDebit for everyone after 4 rounds is 4C.
     // totalDiscounts would be 0.15C.
     // Therefore everyone's credit should be 3.85C to be in good standing.
@@ -347,7 +347,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assertWeiCloseTo(contract.balance, 4.178 * CONTRIBUTION_SIZE);
   }));
 
-  it("post-ROSCA collection period", co(function*() {
+  it("post-ROSCA collection period", co(function* () {
     utils.increaseTime(ROUND_PERIOD);
     // Only the foreperson can collect the surplus funds.
     yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
@@ -368,5 +368,4 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // TODO(ronme): more precise calculations after we move to the contribs/winnings model.
     assert.isAbove(feeCollectorBalanceAfter, feeCollectorBalanceBefore);
   }));
-
 });
