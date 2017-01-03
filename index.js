@@ -15,7 +15,6 @@ let WeTrustContract = {
     fs.readFile(roscaContractLocation, 'utf8', function(err, contractCode) {
     	if (err) {
     	  contractErr = err;
-    	  console.log("Error compiling contract: " + err);
     	  throw Error(err);
     	} else {
     	  let output = solc.compile(contractCode, 1);
