@@ -9,7 +9,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
     const ROUND_PERIOD_IN_DAYS = 3;
     const MIN_DAYS_BEFORE_START = 1;
-    const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
+    const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
 
@@ -17,13 +17,13 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
-    it("watches for LogstartOfRound event", co(function *() {
+    it("watches for LogstartOfRound event", co(function* () {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         let eventFired = false;
-        let startOfRoundEvent = rosca.LogStartOfRound();
-        startOfRoundEvent.watch(function(error,log){
+        let startOfRoundEvent = rosca.LogStartOfRound();  // eslint-disable-line new-cap
+        startOfRoundEvent.watch(function(error, log) {
             startOfRoundEvent.stopWatching();
             eventFired = true;
             assert.equal(log.args.currentRound, 1, "Log didnt show currentRound properly");
@@ -36,11 +36,11 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         assert.isOk(eventFired, "startOfRound event didn't fire");
     }));
 
-    it("Throws when calling startRound before roundStartTime (including round = 0)", co(function *() {
+    it("Throws when calling startRound before roundStartTime (including round = 0)", co(function* () {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
-        for (let i = 0 ; i < MEMBER_COUNT + 1; i++) {
+        for (let i = 0; i < MEMBER_COUNT + 1; i++) {
             yield utils.assertThrows(rosca.startRound(), "expected calling startRound before roundStartTime to throw");
 
             yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
