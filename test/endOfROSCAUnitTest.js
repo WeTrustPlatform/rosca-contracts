@@ -10,7 +10,7 @@ contract('end of ROSCA unit test', function(accounts) {
     const ROUND_PERIOD_IN_DAYS = 3;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
     // Note accounts[0] is the foreperson, deploying the contract.
-    const MEMBER_LIST = [accounts[1],accounts[2],accounts[3]];
+    const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const MEMBER_COUNT = MEMBER_LIST.length + 1;  // foreperson
     const CONTRIBUTION_SIZE = 1e17;
 
@@ -34,7 +34,7 @@ contract('end of ROSCA unit test', function(accounts) {
       }
     }
 
-    it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order", co(function*() {
+    it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order", co(function* () {
       let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
@@ -62,7 +62,7 @@ contract('end of ROSCA unit test', function(accounts) {
       utils.assertEqualUpToGasCosts(feeCollectorBalanceAfter - feeCollectorBalanceBefore, totalFees);
     }));
 
-    it("checks if endOfROSCARetrieve{Fees, Surplus} retrieve the funds when called in this order", co(function*() {
+    it("checks if endOfROSCARetrieve{Fees, Surplus} retrieve the funds when called in this order", co(function* () {
       let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
@@ -92,7 +92,7 @@ contract('end of ROSCA unit test', function(accounts) {
 
 
     it("validates endOfROSCARetrieve{Surplus, Fee} throw if called before clearing out the final round",
-        co(function*() {
+        co(function* () {
       let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
@@ -108,7 +108,7 @@ contract('end of ROSCA unit test', function(accounts) {
     }));
 
     it("validates endOfROSCARetrieve{Surplus,Fee} throws if called not by the {foreperson,feeCollector}",
-        co(function*() {
+        co(function* () {
       let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
@@ -126,7 +126,7 @@ contract('end of ROSCA unit test', function(accounts) {
         rosca.endOfROSCARetrieveFees({from: accounts[0]}));
     }));
 
-    it("validates endOfROSCARetrieve{Surplus, Fee} throw if called too early", co(function*() {
+    it("validates endOfROSCARetrieve{Surplus, Fee} throw if called too early", co(function* () {
       let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
