@@ -1,0 +1,16 @@
+{
+  "extends": "google",
+  "rules": {
+    "max-len": [1, 120],
+  },
+  "parserOptions": {
+    "ecmaVersion": 6,
+  },
+  "globals" : {          // additional predefined global variables
+      "contract": false,
+      "ROSCA": false,
+      "ROSCATest": false,
+      "web3": false
+  },
+
+}

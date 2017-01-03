@@ -16,6 +16,8 @@
     "bluebird": "^3.4.6",
     "chai": "^3.5.0",
     "ethereumjs-testrpc": "^3.0.3"
+    "eslint": "^3.12.2",
+    "eslint-config-google": "^0.7.1"
   },
   "scripts": {
     "test": "./tools/build/run-testrpc-and-tests.sh"
