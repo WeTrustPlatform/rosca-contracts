@@ -13,15 +13,15 @@ let WeTrustContract = {
     let roscaContractLocation = 'contracts/ROSCA.sol';
 
     fs.readFile(roscaContractLocation, 'utf8', function(err, contractCode) {
-    	if (err) {
-    	  contractErr = err;
-    	  throw Error(err);
-    	} else {
-    	  let output = solc.compile(contractCode, 1);
-    	  let roscaContractAbi = JSON.parse(output.contracts.ROSCA.interface);
-    	  let bytecode = output.contracts.ROSCA.bytecode;
-    	  contractCache = {abi: roscaContractAbi, bytecode: bytecode};
-    	}
+      if (err) {
+        contractErr = err;
+        throw Error(err);
+      } else {
+        let output = solc.compile(contractCode, 1);
+        let roscaContractAbi = JSON.parse(output.contracts.ROSCA.interface);
+        let bytecode = output.contracts.ROSCA.bytecode;
+        contractCache = {abi: roscaContractAbi, bytecode: bytecode};
+      }
     });
   },
 
