@@ -38,7 +38,7 @@ let WeTrustContract = {
    */
   getContract: function() {
     if (!contractCache) {
-      throw Error("must call wetrust-rosca-contract's init() first and let is complete");
+      throw Error("must call wetrust-rosca-contract's init() first and let it complete");
     }
     return contractCache;
   },
