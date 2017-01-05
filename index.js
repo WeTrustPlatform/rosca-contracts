@@ -1,5 +1,6 @@
 let fs = require('fs');
 let solc = require('solc');
+let path = require('path');
 
 let contractCache;
 
@@ -9,7 +10,7 @@ let WeTrustContract = {
    * Throws if there was an error.
    */
   init: function(done) {
-    let roscaContractLocation = 'contracts/ROSCA.sol';
+    let roscaContractLocation = path.join(__dirname, 'contracts/ROSCA.sol');
 
     fs.readFile(roscaContractLocation, 'utf8', function(err, contractCode) {
       if (err) {
