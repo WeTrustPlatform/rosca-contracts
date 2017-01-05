@@ -1,22 +1,24 @@
 {
   "name": "wetrust-rosca-contract",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "ROSCA contract for Ethereum",
-  "main": "truffle.js",
+  "main": "index.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
-    "blueberry": "^0.5.0",
-    "co": "^4.6.0",
-    "scrypt": "^6.0.3",
-    "truffle": "^3.0.0-4"
+    "path": "^0.12.7",
+    "solc": "^0.4.7"
   },
   "devDependencies": {
+    "blueberry": "^0.5.0",
     "bluebird": "^3.4.6",
     "chai": "^3.5.0",
+    "co": "^4.6.0",
+    "eslint": "^3.12.2",
     "ethereumjs-testrpc": "^3.0.3",
-    "eslint": "^3.12.2"
+    "scrypt": "^6.0.3",
+    "truffle": "^2.1.1"
   },
   "scripts": {
     "test": "./tools/build/run-testrpc-and-tests.sh"
