@@ -18,7 +18,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
-    it("Throws when calling Bid with valid parameters before ROSCA starts", co(function* () {
+    it("Throws when calling bid with valid parameters before ROSCA starts", co(function* () {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
