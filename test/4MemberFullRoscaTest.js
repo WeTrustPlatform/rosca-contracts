@@ -61,7 +61,6 @@ function* getContractStatus() {
   };
 }
 
-
 contract('Full 4 Member ROSCA Test', function(accounts_) {
   const MIN_START_DELAY = 86400 + 10;
   const ROUND_PERIOD_IN_DAYS = 3;
@@ -146,7 +145,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     expectedContractBalance = 4.2 * CONTRIBUTION_SIZE;
     assert.equal(contract.balance, expectedContractBalance);
     // Total fee = theoretical fee (since no delinquency)
-    // totalFees = memberCount * contributionSize * currentRound - 1 (startRound incremented currentRound after calculating totalFees)
+    // totalFees = memberCount * contributionSize * currentRound - 1 (startRound incremented
+    // currentRound after calculating totalFees)
     assert.equal(contract.totalFees, DEFAULT_POT * (contract.currentRound - 1)
         / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -192,7 +192,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.equal(contract.credits[2], 2 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO);
     assert.equal(contract.credits[3], CONTRIBUTION_SIZE); // not in good standing
     // TD == OLD_TD + (DEFAULT_POT - POT_WON) * NET_REWARD_RATIO / memberCount
-    expectedtotalDiscounts = expectedtotalDiscounts + DEFAULT_POT * (1 - WINNING_BID_PERCENT[1]) / MEMBER_COUNT * NET_REWARDS_RATIO;
+    expectedtotalDiscounts = expectedtotalDiscounts + DEFAULT_POT * (1 - WINNING_BID_PERCENT[1]) /
+        MEMBER_COUNT * NET_REWARDS_RATIO;
     assertWeiCloseTo(contract.totalDiscounts, expectedtotalDiscounts);
 
     // Contributions were 0.8C + 1C - totalDiscount from last Round .
@@ -202,7 +203,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.equal(contract.balance, expectedContractBalance);
     // totalFees == 2 * 4 = 8 - 1 (1 person didn't contribute) * fees;
     let theoreticalTotalFees = DEFAULT_POT * (contract.currentRound - 1);
-    assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - CONTRIBUTION_SIZE + expectedtotalDiscounts) / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - CONTRIBUTION_SIZE + expectedtotalDiscounts) / 1000 *
+        SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 3); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
@@ -244,7 +246,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.equal(contract.credits[0], 3 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO +
         DEFAULT_POT * NET_REWARDS_RATIO);
     assert.equal(contract.credits[1], 3 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.15 / MEMBER_COUNT * NET_REWARDS_RATIO);
-    assert.equal(contract.credits[2], 2 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO); // not in good standing
+    // not in good standing
+    assert.equal(contract.credits[2], 2 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO);
     assert.equal(contract.credits[3], 2 * CONTRIBUTION_SIZE); // not in good standing
 
     assertWeiCloseTo(contract.totalDiscounts, expectedtotalDiscounts);  // The entire pot was won, TD does not change,
@@ -257,7 +260,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     let theoreticalTotalFees = DEFAULT_POT * (contract.currentRound - 1);
     let p2Delinquency = (contract.currentRound - 1) * CONTRIBUTION_SIZE - contract.credits[2] - expectedtotalDiscounts;
     let p3Delinquency = (contract.currentRound - 1) * CONTRIBUTION_SIZE - contract.credits[3] - expectedtotalDiscounts;
-    assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - p2Delinquency - p3Delinquency) / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
+    assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - p2Delinquency - p3Delinquency) / 1000 *
+        SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 4); // currentRound value
     assert.isNotOk(yield rosca.endOfROSCA.call());
@@ -270,7 +274,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     yield withdraw(0);
 
     let contract = yield getContractStatus();
-    // contract doesn't have enough funds to fully withdraw p0's request so only totalFees should be left after withdrawal
+    // contract doesn't have enough funds to fully withdraw p0's request, only totalFees should be left after withdrawal
     assert.equal(contractBalanceBefore - contract.balance, contractBalanceBefore - contract.totalFees);
     expectedContractBalance = contract.totalFees;
     assert.equal(contract.balance, expectedContractBalance);
@@ -301,8 +305,9 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // Note that all credits are actually 3C more than participants can draw (neglecting totalDiscounts).
     assertWeiCloseTo(contract.credits[0], p0ExpectedCredit);
     assertWeiCloseTo(contract.credits[1], 4 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.15 / MEMBER_COUNT * NET_REWARDS_RATIO);
-    assertWeiCloseTo(contract.credits[2], 6 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO); // not in good standing
-    assertWeiCloseTo(contract.credits[3], 3 * CONTRIBUTION_SIZE + DEFAULT_POT * NET_REWARDS_RATIO); // not in good standing but won the pot
+    assertWeiCloseTo(contract.credits[2], 6 * CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO);
+    // not in good standing but won the pot
+    assertWeiCloseTo(contract.credits[3], 3 * CONTRIBUTION_SIZE + DEFAULT_POT * NET_REWARDS_RATIO);
     // The entire pot was won, TD does not change
 
     assertWeiCloseTo(contract.totalDiscounts, expectedtotalDiscounts);
@@ -312,7 +317,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assertWeiCloseTo(contract.balance, expectedContractBalance);
 
     let theoreticalTotalFees = DEFAULT_POT * contract.currentRound;
-    let p3Delinquency = (contract.currentRound * CONTRIBUTION_SIZE + DEFAULT_POT * NET_REWARDS_RATIO) - contract.credits[3] - expectedtotalDiscounts;
+    let p3Delinquency = (contract.currentRound * CONTRIBUTION_SIZE + DEFAULT_POT * NET_REWARDS_RATIO) -
+        contract.credits[3] - expectedtotalDiscounts;
 
     assertWeiCloseTo(contract.totalFees, (theoreticalTotalFees - p3Delinquency) / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -327,7 +333,8 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     // p0's credit from last round
 
     let contract = yield getContractStatus();
-    assertWeiCloseTo(contractBalanceBefore - contract.balance, p0ExpectedCredit - (4 * CONTRIBUTION_SIZE - expectedtotalDiscounts));
+    assertWeiCloseTo(contractBalanceBefore - contract.balance, p0ExpectedCredit -
+        (4 * CONTRIBUTION_SIZE - expectedtotalDiscounts));
     // last rounded ended with contract.balance == 2.1695. So it should now have (2.1695 - 0.7425C) == 1.427C
     expectedContractBalance -= p0ExpectedCredit - (4 * CONTRIBUTION_SIZE - expectedtotalDiscounts);
     assertWeiCloseTo(contract.balance, expectedContractBalance);

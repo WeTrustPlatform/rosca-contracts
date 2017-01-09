@@ -34,6 +34,7 @@ contract('fees unit test', function(accounts_) {
   const CONTRIBUTION_SIZE = 1e17;
   const MEMBER_LIST = accounts_.slice(1, 2);  // accounts[0] is also participant, as a foreperson
   const POT_SIZE = (MEMBER_LIST.length + 1) * CONTRIBUTION_SIZE;
+  const NET_REWARDS_RATIO = ((1000 - SERVICE_FEE_IN_THOUSANDTHS) / 1000);
 
 
   function* getFeesInContractAfterLastRound(rosca) {
@@ -91,8 +92,8 @@ contract('fees unit test', function(accounts_) {
     yield withdraw(0);
     let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
     // withdrawal would be (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
-    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * 0.99 * CONTRIBUTION_SIZE +
-        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * CONTRIBUTION_SIZE * NET_REWARDS_RATIO +
+        0.1 * CONTRIBUTION_SIZE * NET_REWARDS_RATIO, "fees taken out doesn't match theoretical calculations");
 
     contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
 
@@ -131,16 +132,16 @@ contract('fees unit test', function(accounts_) {
     yield withdraw(0);
     let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
     // withdrawal would be (0.9 * 2C) * 0.99(fee) + (0.1 * 0.2 / 2)(totalDiscounts) * 0.99(fee)
-    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * 0.99 * CONTRIBUTION_SIZE +
-        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE +
+        0.1 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
 
     contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
 
     yield withdraw(1);
     contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
     // withdrawal would be 2C * 0.99(fee) + (0.1 * 0.2 / 2)(totalDiscounts) * 0.99(fee)
-    assert.equal(contractBalanceBefore - contractBalanceAfter, 2 * 0.99 * CONTRIBUTION_SIZE +
-        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 2 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE +
+        0.1 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
 
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
@@ -174,7 +175,8 @@ contract('fees unit test', function(accounts_) {
     let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
     // withdrawal would be 0.5C(over contributed) + (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
     assert.equal(contractBalanceBefore - contractBalanceAfter, 0.5 * CONTRIBUTION_SIZE +
-        1.8 * 0.99 * CONTRIBUTION_SIZE + 0.1 * 0.99 * CONTRIBUTION_SIZE  , "fees got taken out of over contribution");
+        1.8 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE + 0.1 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE  ,
+        "fees got taken out of over contribution");
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
   }));
@@ -210,16 +212,16 @@ contract('fees unit test', function(accounts_) {
 
     // Finish the ROSCA
     utils.increaseTime(ROUND_PERIOD);
-    yield rosca.startRound();
+    yield startRound();
 
     contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
 
     yield withdraw(0);
     contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
     // withdrawal would be (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
-    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * 0.99 * CONTRIBUTION_SIZE +
-        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
-
+    let expectedWithdrawalBalance = 1.8 * CONTRIBUTION_SIZE * NET_REWARDS_RATIO +
+        0.1 * CONTRIBUTION_SIZE * NET_REWARDS_RATIO;
+    assert.equal(contractBalanceBefore - contractBalanceAfter, expectedWithdrawalBalance);
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
   }));
@@ -251,7 +253,6 @@ contract('fees unit test', function(accounts_) {
     // console.log(expectedDiscount);
     let expectedFees = (CONTRIBUTION_SIZE * (2 + 1.5) + expectedDiscount) / 1000 * SERVICE_FEE_IN_THOUSANDTHS;
     assert.closeTo(Math.abs(1 - fees / expectedFees) , 0, 0.01, "actual: " + fees + ",expected: " + expectedFees);
-    //assert.is(fees, expectedFeesFrom(CONTRIBUTION_SIZE * (2 + 1.5) + expectedDiscount));  // 2 rounds, in one there is delinquency
   }));
 
   it('checks if fees are applied to rolled over credits', co(function* () {

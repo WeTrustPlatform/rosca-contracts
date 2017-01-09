@@ -34,7 +34,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
             SERVICE_FEE_IN_THOUSANDTHS);
 
-        for(let i = 0; i < MEMBER_LIST.length + 2; i++) {
+        for (let i = 0; i < MEMBER_LIST.length + 2; i++) {
             utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
             yield rosca.startRound();
         }

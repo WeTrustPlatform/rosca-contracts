@@ -104,4 +104,37 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[3], "a non member was chosen when there were no bids");
     }));
+
+    it("checks if random unpaid delinquent member is picked when no bid was placed and" +
+        "only delinquent members are eligible", co(function* () {
+        let memberList = [accounts[1]];
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            memberList, SERVICE_FEE_IN_THOUSANDTHS);
+
+
+        utils.increaseTime(START_TIME_DELAY);
+        yield rosca.startRound();
+
+        let winner;
+        let possibleWinner = [accounts[0], accounts[1]];
+        let winnerAddress = 0;
+
+        let eventFired = false;
+        let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
+        fundsReleasedEvent.watch(co(function* (error, log) {
+            fundsReleasedEvent.stopWatching();
+            eventFired = true;
+            winnerAddress = log.args.winnerAddress;
+            winner = yield rosca.members.call(log.args.winnerAddress);
+        }));
+
+        yield rosca.cleanUpPreviousRound();
+
+        yield Promise.delay(300);
+        assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
+        assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
+        assert.equal(winner[0].toString(), utils.afterFee((memberList.length + 1) * CONTRIBUTION_SIZE,
+            SERVICE_FEE_IN_THOUSANDTHS)); // winner.credit
+        assert.isOk(winner[3], "a non member was chosen when there were no bids");
+    }));
 });

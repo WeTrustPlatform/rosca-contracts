@@ -275,15 +275,18 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
          yield Promise.delay(300);
 
-         assert.isOk(eventFired, "Fundreleased event did not occured");
+         assert.isOk(eventFired, "LogRoundsFundsReleased event did not occur");
          // Throws when delinquent, does not throw otherwise.
          yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
          yield rosca.contribute({from: winnerAddress, value: 1.5 * CONTRIBUTION_SIZE});
          yield rosca.withdraw({from: winnerAddress});
     }));
 
-    it("throws if delinquent calls withdraw before the endOfROSCA and can only withdraw up to amountContributed", co(function*() {
-        // 3 person rosca,
+    it("delinquent cannot withdraw before end of rosca, can withdraw up to amount contributed after the end",
+        co(function*() {
+        // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
+        // We check that the winner cannot withdraw their money until rosca has ended.
+        // After rosca ended, we check that the winner can only withdraw the amount he contributed.
         let members = [accounts[1]];
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             members, SERVICE_FEE_IN_THOUSANDTHS);
@@ -309,7 +312,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         yield Promise.delay(300);
 
-        assert.isOk(eventFired, "Fundreleased event did not occured");
+        assert.isOk(eventFired, "LogRoundsFundsReleased event did not occur");
         // Throws when delinquent, does not throw otherwise.
         yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
 
@@ -320,6 +323,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         yield rosca.withdraw({from: winnerAddress});
         let contractBalanceAfter = web3.eth.getBalance(rosca.address);
 
-        assert.isAtMost(contractBalanceBefore - contractBalanceAfter, 0.5 * CONTRIBUTION_SIZE);
+        assert.equal(contractBalanceBefore - contractBalanceAfter, 0.5 * CONTRIBUTION_SIZE);
     }));
 });

@@ -50,6 +50,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         for (let i = 0; i < MEMBER_COUNT + 1; i++) { // +1, to startRound
             utils.increaseTime(ROUND_PERIOD_DELAY);
             yield rosca.startRound();
+            assert.isNotOk(eventFired);
         }
 
         yield Promise.delay(1000); // 1000ms delay to allow the event to fire properly
