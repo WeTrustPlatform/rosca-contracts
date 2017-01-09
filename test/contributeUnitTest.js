@@ -24,6 +24,24 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             "calling contribute from a non-member success");
     }));
 
+    it("throws when contributing after end of Rosca", co(function* () {
+        utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
+
+        let latestBlock = web3.eth.getBlock("latest");
+        let blockTime = latestBlock.timestamp;
+
+        let rosca = yield ROSCATest.new(
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
+            SERVICE_FEE_IN_THOUSANDTHS);
+
+        for(let i = 0; i < MEMBER_LIST.length + 2; i++) {
+            utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+            yield rosca.startRound();
+        }
+
+        utils.assertThrows(rosca.contribute({from: accounts[0],value: CONTRIBUTION_SIZE}));
+    }));
+
     it("generates a LogContributionMade event after a successful contribution", co(function* () {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
@@ -60,5 +78,50 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
 
         assert.equal(creditAfter, CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
+    }));
+
+    it("checks delinquent winner contribute the right amount to be no longer be considered a delinquent", co(function*() {
+        let members = [accounts[1],accounts[2]];
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            members, SERVICE_FEE_IN_THOUSANDTHS);
+        let DEFAULT_POT = MEMBER_LIST.length * CONTRIBUTION_SIZE;
+        utils.increaseTime(START_TIME_DELAY);
+        yield Promise.all([
+            rosca.startRound(),
+            rosca.contribute({from: accounts[1], value: 0.5 * CONTRIBUTION_SIZE}),
+            rosca.contribute({from: accounts[0], value: 0.5 * CONTRIBUTION_SIZE}),
+            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
+            rosca.bid(DEFAULT_POT * 0.8, {from: accounts[2]}),
+        ]);
+
+        utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+        yield rosca.startRound();
+
+        let winnerAddress = 0;
+
+        let eventFired = false;
+        let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
+        fundsReleasedEvent.watch(function (error, log) {
+            fundsReleasedEvent.stopWatching();
+            eventFired = true;
+            winnerAddress = log.args.winnerAddress;
+        });
+
+        utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+        yield rosca.startRound();
+
+        yield Promise.delay(300);
+        // winnerAddress's credit should be 0.5 + 3(defaultPot) * fee
+        // requirement to get Out of debt = 3(currentRound) + 3(defaultPot) * fee
+        // so credit must be at least = 3(currentRound) + 3(defaultPot) * fee - totalDiscount
+        // so winnerAddress needs to contribute = 2.5 - totalDiscount
+        assert.isOk(eventFired, "Fundreleased event did not occured");
+        let contributionToNonDelinquency = 2.5 * CONTRIBUTION_SIZE - (yield rosca.totalDiscounts.call());
+        yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
+        // for some reason 1 is being rounded up so 10 is used instead
+        yield rosca.contribute({from: winnerAddress, value: (contributionToNonDelinquency - 10)});
+        yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
+        yield rosca.contribute({from: winnerAddress, value: 10});
+        yield rosca.withdraw({from: winnerAddress});
     }));
 });

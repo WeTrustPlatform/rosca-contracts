@@ -32,8 +32,9 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         ]);
 
         let discount = yield rosca.totalDiscounts.call();
+        const expectedDiscount = utils.afterFee(DEFAULT_POT - BID_TO_PLACE, SERVICE_FEE_IN_THOUSANDTHS) / MEMBER_COUNT;
 
-        assert.equal(discount, DEFAULT_POT - BID_TO_PLACE, "toalDiscount value didn't get added properly");
+        assert.equal(discount, expectedDiscount, "toalDiscount value didn't get added properly");
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function* () {
@@ -56,9 +57,10 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             eventFired = true;
             let user = yield rosca.members.call(log.args.winnerAddress);
             assert.equal(accounts[1], log.args.winnerAddress);
-            assert.isOk(user[2], "chosen address is not a member"); // user.alive
-            assert.isOk(user[1], "Paid member was chosen"); // user.paid
-            assert.equal(user[0].toString(), CONTRIBUTION_SIZE + BID_TO_PLACE); // user.credit
+            assert.isOk(user[3], "chosen address is not a member"); // user.alive
+            assert.isOk(user[2], "Paid member was chosen"); // user.paid
+            let expectedCredit = CONTRIBUTION_SIZE + utils.afterFee(BID_TO_PLACE, SERVICE_FEE_IN_THOUSANDTHS);
+            assert.equal(user[0].toString(), expectedCredit); // user.credit
         }));
 
         yield rosca.cleanUpPreviousRound();
@@ -98,8 +100,8 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield Promise.delay(300);
         assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
-        assert.equal(winner[0], CONTRIBUTION_SIZE + DEFAULT_POT,  // credit
+        assert.equal(winner[0], CONTRIBUTION_SIZE + utils.afterFee(DEFAULT_POT, SERVICE_FEE_IN_THOUSANDTHS),  // credit
             "lowestBid is not deposited into winner's credit"); // winner.credit
-        assert.isOk(winner[2], "a non member was chosen when there were no bids");
+        assert.isOk(winner[3], "a non member was chosen when there were no bids");
     }));
 });

@@ -41,6 +41,7 @@ contract ROSCA {
   event LogFundsWithdrawal(address user, uint256 amount);
   event LogCannotWithdrawFully(uint256 requestedAmount,uint256 contractBalance);
   event LogUnsuccessfulBid(address bidder,uint256 bidInWei,uint256 lowestBid);
+  event LogEndOfROSCA();
 
   // Escape hatch related events.
   event LogEscapeHatchEnabled();
@@ -80,7 +81,8 @@ contract ROSCA {
   bool internal escapeHatchActive = false;
 
   struct User {
-    uint256 credit;  // amount of funds user has contributed so far
+    uint256 credit;  // amount of funds user has contributed + winnings (not including discounts) so far
+    bool debt; // true if user won the pot while not in good standing and is still not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
   }
@@ -156,13 +158,14 @@ contract ROSCA {
 
   function addMember(address newMember) internal {
     if (members[newMember].alive) throw;
-    members[newMember] = User({paid: false , credit: 0, alive: true});
+    members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
     membersAddresses.push(newMember);
   }
 
   /**
     * Calculates the winner of the current round's pot, and credits her.
     * If there were no bids during the round, winner is selected semi-randomly.
+    * Priority is given to non-delinquents.
     */
   function startRound() roscaNotEnded external {
     uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInDays * 1 days);
@@ -180,32 +183,56 @@ contract ROSCA {
       LogStartOfRound(currentRound);
     } else {
         endOfROSCA = true;
+        LogEndOfROSCA();
     }
   }
 
   function cleanUpPreviousRound() internal {
+    address delinquentWinner = 0x0;
     if (winnerAddress == 0) {
       // There is no bid in this round. Find an unpaid address for this epoch.
+      // give priority to member in good standing
       uint256 semi_random = now % membersAddresses.length;
       for (uint16 i = 0; i < membersAddresses.length; i++) {
         address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
-        if (!members[candidate].paid &&
-            members[candidate].credit + (totalDiscounts / membersAddresses.length) >= (currentRound * contributionSize)) { // check if the member is in good standing
-          winnerAddress = candidate;
-          break;
+        if (!members[candidate].paid) {
+          if (members[candidate].credit + totalDiscounts >= (currentRound * contributionSize)) {
+            winnerAddress = candidate;
+            break;
+          }
+          delinquentWinner = candidate;
         }
       }
-      // Also - set lowestBid to the right value.
+      if (winnerAddress == 0) {
+        winnerAddress = delinquentWinner;
+      }
+      // Also - set lowestBid to the right value since there was no winning bid
       lowestBid = contributionSize * membersAddresses.length;
     }
-    if (winnerAddress == 0) { // no potential winner
-      LogRoundNoWinner(currentRound);
-    } else {
-      totalDiscounts += contributionSize * membersAddresses.length - lowestBid;
-      members[winnerAddress].credit += lowestBid;
-      members[winnerAddress].paid = true;
-      LogRoundFundsReleased(winnerAddress, lowestBid);
+    totalDiscounts += ((contributionSize * membersAddresses.length - lowestBid) / 1000 * (1000 - serviceFeeInThousandths)) / membersAddresses.length;
+    if (winnerAddress == delinquentWinner) {
+      members[winnerAddress].debt = true;
     }
+    members[winnerAddress].credit += lowestBid / 1000 * (1000 - serviceFeeInThousandths);
+    members[winnerAddress].paid = true;
+    LogRoundFundsReleased(winnerAddress, lowestBid);
+
+    // ReCalculate totalFees
+    uint256 requiredContribution = currentRound * contributionSize;
+    totalFees = currentRound * membersAddresses.length * contributionSize;
+    for (uint16 j = 0; j < membersAddresses.length; j++) {
+      uint256 credit = members[membersAddresses[j]].credit;
+      if (members[membersAddresses[j]].debt) { // delinquent member who had won the pot by default.
+          // as a delinquent member won, we'll reduce the funds up for fees by the default pot they have won (since
+          // they could not bid), to account for their delinquency
+          // if debt == true, there would be extra funds that increase user's credit by defaultPot * feeCalculations.
+          totalFees -= requiredContribution - (credit - ((membersAddresses.length * contributionSize) / 1000 * (1000 - serviceFeeInThousandths))) - totalDiscounts;
+      } else if (credit + totalDiscounts < requiredContribution) { // delinquent member who haven't win the pot yet
+          totalFees -= requiredContribution - credit - totalDiscounts;
+      }
+    }
+
+    totalFees = totalFees / 1000 * serviceFeeInThousandths;
   }
 
   /**
@@ -214,11 +241,16 @@ contract ROSCA {
    *
    * Any excess funds are withdrawable through withdraw().
    */
-  function contribute() payable onlyFromMember onlyIfEscapeHatchInactive external {
+  function contribute() payable onlyFromMember roscaNotEnded onlyIfEscapeHatchInactive external {
     members[msg.sender].credit += msg.value;
-    // TODO(ron): this has a bad edge case: it will take fees of any excessive contributions made.
-    // Fix this once we switch to the contributions/winnings model.
-    totalFees += msg.value / 1000 * serviceFeeInThousandths;
+    if (members[msg.sender].debt) {
+      // check that credit must defaultPot (when debt is set to true, defaultPot was added to credit as winnings) +
+      // currentRound in order to be out of debt
+      if (members[msg.sender].credit + totalDiscounts >= currentRound * contributionSize +
+          (membersAddresses.length * contributionSize / 1000 * (1000 - serviceFeeInThousandths))) {
+          members[msg.sender].debt = false;
+      }
+    }
 
     LogContributionMade(msg.sender, msg.value);
   }
@@ -235,7 +267,7 @@ contract ROSCA {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
-        members[msg.sender].credit + (totalDiscounts / membersAddresses.length) < (currentRound * contributionSize) ||
+        members[msg.sender].credit + totalDiscounts < (currentRound * contributionSize) ||
         // bid is less than minimum allowed
         bidInWei < ((contributionSize * membersAddresses.length) / 100) * MIN_DISTRIBUTION_PERCENT)
       throw;
@@ -261,28 +293,30 @@ contract ROSCA {
    * sends the fund to that address, otherwise sends to msg.sender.
    */
   function withdraw() onlyFromMember onlyIfEscapeHatchInactive external returns(bool success) {
-    uint256 totalCredit = members[msg.sender].credit + totalDiscounts / membersAddresses.length;
-    uint256 totalDebit = currentRound * contributionSize;
+    if (members[msg.sender].debt && !endOfROSCA) {
+      throw;
+    }
+    uint256 totalCredit = members[msg.sender].credit + totalDiscounts;
+
+    uint256 totalDebit = members[msg.sender].debt ? membersAddresses.length * contributionSize / 1000 * (1000 - serviceFeeInThousandths) : currentRound * contributionSize;
     if (totalDebit >= totalCredit) throw;  // nothing to withdraw
 
     uint256 amountToWithdraw = totalCredit - totalDebit;
-    uint256 amountAfterFee = amountToWithdraw / 1000 * (1000 - serviceFeeInThousandths);
 
     uint256 amountAvailable = this.balance - totalFees;
-    if (amountAvailable < amountAfterFee) {
+    if (amountAvailable < amountToWithdraw) {
       // This may happen if some participants are delinquent.
-      amountAfterFee = amountAvailable;
       LogCannotWithdrawFully(amountToWithdraw, amountAvailable);
-      amountToWithdraw = amountAvailable * 1000 / (1000 - serviceFeeInThousandths);
+      amountToWithdraw = amountAvailable;
     }
     members[msg.sender].credit -= amountToWithdraw;
-    if (!msg.sender.send(amountAfterFee)) {   // if the send() fails, put the allowance back to its original place
+    if (!msg.sender.send(amountToWithdraw)) {   // if the send() fails, put the allowance back to its original place
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       members[msg.sender].credit += amountToWithdraw;
       return false;
     }
-    LogFundsWithdrawal(msg.sender, amountAfterFee);
+    LogFundsWithdrawal(msg.sender, amountToWithdraw);
     return true;
   }
 

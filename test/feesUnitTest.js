@@ -37,9 +37,6 @@ contract('fees unit test', function(accounts_) {
 
 
   function* getFeesInContractAfterLastRound(rosca) {
-    // Finish the ROSCA
-    utils.increaseTime(ROUND_PERIOD);
-    yield rosca.startRound();
 
     // Wait another round.
     utils.increaseTime(ROUND_PERIOD);
@@ -85,6 +82,25 @@ contract('fees unit test', function(accounts_) {
       contribute(0, CONTRIBUTION_SIZE),
       contribute(1, CONTRIBUTION_SIZE),
     ]);
+    // Finish the ROSCA
+    utils.increaseTime(ROUND_PERIOD);
+    yield rosca.startRound();
+
+    let contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
+
+    yield withdraw(0);
+    let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
+    // withdrawal would be (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * 0.99 * CONTRIBUTION_SIZE +
+        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
+
+    contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
+
+    yield withdraw(1);
+    contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
+    // withdrawal would be 2C * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 2 * 0.99 * CONTRIBUTION_SIZE +
+        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
 
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
@@ -106,57 +122,107 @@ contract('fees unit test', function(accounts_) {
       startRound(),
       contribute(1, CONTRIBUTION_SIZE),
     ]);
+    // Finish the ROSCA
+    utils.increaseTime(ROUND_PERIOD);
+    yield rosca.startRound();
+
+    let contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
+
+    yield withdraw(0);
+    let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
+    // withdrawal would be (0.9 * 2C) * 0.99(fee) + (0.1 * 0.2 / 2)(totalDiscounts) * 0.99(fee)
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * 0.99 * CONTRIBUTION_SIZE +
+        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
+
+    contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
+
+    yield withdraw(1);
+    contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
+    // withdrawal would be 2C * 0.99(fee) + (0.1 * 0.2 / 2)(totalDiscounts) * 0.99(fee)
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 2 * 0.99 * CONTRIBUTION_SIZE +
+        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
 
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
   }));
 
-  // THE FOLLOWING 2 TESTS ARE FAILING BECAUSE OF A KNOWN BUG IN ROSCA.SOL
-  // TODO(shine): uncomment in the PR of fixing the bug.
-  // it('does not charge overcontributions that do not get used in the ROSCA and do not get withdrawn', co(function* () {
-  //   // In this test, accounts[0] contributes 1.5C in round 1, and another 1C in round 2.
-  //   utils.increaseTime(START_TIME_DELAY + 200);
-  //   yield Promise.all([
-  //     startRound(),
-  //     contribute(0, 1.5 * CONTRIBUTION_SIZE),
-  //     contribute(1, CONTRIBUTION_SIZE),
+  it('does not charge overcontributions that do not get used in the ROSCA and do not get withdrawn', co(function* () {
+    // In this test, accounts[0] contributes 1.5C in round 1, and another 1C in round 2.
+    utils.increaseTime(START_TIME_DELAY + 200);
+    yield Promise.all([
+      startRound(),
+      contribute(0, 1.5 * CONTRIBUTION_SIZE),
+      contribute(1, CONTRIBUTION_SIZE),
 
-  //     bid(0, 0.9 * POT_SIZE)
-  //   ]);
+      bid(0, 0.9 * POT_SIZE)
+    ]);
 
-  //   utils.increaseTime(ROUND_PERIOD);
-  //   yield Promise.all([
-  //     startRound(),
-  //     contribute(0, 1 * CONTRIBUTION_SIZE),
-  //     contribute(1, CONTRIBUTION_SIZE),
-  //   ]);
+    utils.increaseTime(ROUND_PERIOD);
+    yield Promise.all([
+      startRound(),
+      contribute(0, 1 * CONTRIBUTION_SIZE),
+      contribute(1, CONTRIBUTION_SIZE),
+    ]);
 
-  //   let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
-  //   assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
-  // }));
+    // Finish the ROSCA
+    utils.increaseTime(ROUND_PERIOD);
+    yield rosca.startRound();
 
-  // it('does not charge overcontributions that do not get used in the ROSCA and do get withdrawn', co(function* () {
-  //   // In this test, accounts[0] contributes 1.5C in round 1, then withdraws, then contributes another 1C in round 2 .
-  //   utils.increaseTime(START_TIME_DELAY + 200);
-  //   yield Promise.all([
-  //     startRound(),
-  //     contribute(0, 1.5 * CONTRIBUTION_SIZE),
-  //     withdraw(0),
-  //     contribute(1, CONTRIBUTION_SIZE),
+    let contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
 
-  //     bid(0, 0.9 * POT_SIZE)
-  //   ]);
+    yield withdraw(0);
+    let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
+    // withdrawal would be 0.5C(over contributed) + (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 0.5 * CONTRIBUTION_SIZE +
+        1.8 * 0.99 * CONTRIBUTION_SIZE + 0.1 * 0.99 * CONTRIBUTION_SIZE  , "fees got taken out of over contribution");
+    let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
+    assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
+  }));
 
-  //   utils.increaseTime(ROUND_PERIOD);
-  //   yield Promise.all([
-  //     startRound(),
-  //     contribute(0, 1 * CONTRIBUTION_SIZE),
-  //     contribute(1, CONTRIBUTION_SIZE),
-  //   ]);
+  it('does not charge overcontributions that do not get used in the ROSCA and do get withdrawn', co(function* () {
+    // In this test, accounts[0] contributes 1.5C in round 1, then withdraws, then contributes another 1C in round 2 .
+    utils.increaseTime(START_TIME_DELAY + 200);
+    yield Promise.all([
+          startRound(),
+          contribute(0, 1.5 * CONTRIBUTION_SIZE),
+    ]);
 
-  //   let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
-  //   assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
-  // }));
+    let contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
+
+    yield withdraw(0);
+    let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
+    // withdrawal would be 0.5(over contribtuion) ** note, no fees should be taken out of over contribution
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 0.5 * CONTRIBUTION_SIZE,
+        "fees taken out doesn't match theoretical calculations");
+
+    yield Promise.all([
+      contribute(1, CONTRIBUTION_SIZE),
+
+      bid(0, 0.9 * POT_SIZE)
+    ]);
+
+    utils.increaseTime(ROUND_PERIOD);
+    yield Promise.all([
+      startRound(),
+      contribute(0, 1 * CONTRIBUTION_SIZE),
+      contribute(1, CONTRIBUTION_SIZE),
+    ]);
+
+    // Finish the ROSCA
+    utils.increaseTime(ROUND_PERIOD);
+    yield rosca.startRound();
+
+    contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
+
+    yield withdraw(0);
+    contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
+    // withdrawal would be (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
+    assert.equal(contractBalanceBefore - contractBalanceAfter, 1.8 * 0.99 * CONTRIBUTION_SIZE +
+        0.1 * 0.99 * CONTRIBUTION_SIZE, "fees taken out doesn't match theoretical calculations");
+
+    let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
+    assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
+  }));
 
   it('does not charge fees from contributions not covered because of delinquencies', co(function* () {
     // In this test, accounts[0] contributes 0.5C in round 1, and another 1C in round 2.
@@ -176,8 +242,36 @@ contract('fees unit test', function(accounts_) {
       contribute(1, CONTRIBUTION_SIZE),
     ]);
 
+    // Finish the ROSCA
+    utils.increaseTime(ROUND_PERIOD);
+    yield rosca.startRound();
+
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
-    assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * (2 + 1.5)));  // 2 rounds, in one there is delinquency
+    let expectedDiscount = (MEMBER_LIST.length * CONTRIBUTION_SIZE * 0.1) / MEMBER_LIST.length;
+    // console.log(expectedDiscount);
+    let expectedFees = (CONTRIBUTION_SIZE * (2 + 1.5) + expectedDiscount) / 1000 * SERVICE_FEE_IN_THOUSANDTHS;
+    assert.closeTo(Math.abs(1 - fees / expectedFees) , 0, 0.01, "actual: " + fees + ",expected: " + expectedFees);
+    //assert.is(fees, expectedFeesFrom(CONTRIBUTION_SIZE * (2 + 1.5) + expectedDiscount));  // 2 rounds, in one there is delinquency
+  }));
+
+  it('checks if fees are applied to rolled over credits', co(function* () {
+    // In this test, accounts[0] contributes 0.5C in round 1, and another 1C in round 2.
+    utils.increaseTime(START_TIME_DELAY + 200);
+    yield Promise.all([
+      startRound(),
+      contribute(0, CONTRIBUTION_SIZE),
+    ]);
+
+    utils.increaseTime(ROUND_PERIOD);
+    yield Promise.all([
+      startRound(),
+    ]);
+
+    // Finish the ROSCA
+    utils.increaseTime(ROUND_PERIOD);
+    yield rosca.startRound();
+    let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
+    assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2));  // 2 rounds, only one in goodStanding
   }));
 });
 

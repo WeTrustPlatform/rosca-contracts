@@ -36,6 +36,26 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         assert.isOk(eventFired, "startOfRound event didn't fire");
     }));
 
+    it("watches for LogEndOfROSCA event", co(function* () {
+        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+
+        let eventFired = false;
+        let endOfRoscaEvent = rosca.LogEndOfROSCA();  // eslint-disable-line new-cap
+        endOfRoscaEvent.watch(function(error, log) {
+            endOfRoscaEvent.stopWatching();
+            eventFired = true;
+        });
+
+        for (let i = 0; i < MEMBER_COUNT + 1; i++) { // +1, to startRound
+            utils.increaseTime(ROUND_PERIOD_DELAY);
+            yield rosca.startRound();
+        }
+
+        yield Promise.delay(1000); // 1000ms delay to allow the event to fire properly
+        assert.isOk(eventFired, "endOfROSCA event didn't fire");
+    }));
+
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function* () {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);

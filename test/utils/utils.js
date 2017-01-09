@@ -11,6 +11,10 @@ module.exports = {
     myWeb3 = web3;
   },
 
+  afterFee : function(amount, serviceFeeInThousandths) {
+    return amount / 1000 * (1000 - serviceFeeInThousandths);
+  },
+
   assertEqualUpToGasCosts: function(actual, expected) {
       assert.closeTo(actual, expected, consts.MAX_GAS_COST_PER_TX);
   },
