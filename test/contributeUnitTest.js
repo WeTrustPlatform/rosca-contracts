@@ -39,7 +39,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             yield rosca.startRound();
         }
 
-        utils.assertThrows(rosca.contribute({from: accounts[0],value: CONTRIBUTION_SIZE}));
+        utils.assertThrows(rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}));
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function* () {
@@ -80,8 +80,9 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         assert.equal(creditAfter, CONTRIBUTION_CHECK, "contribution's credit value didn't get registered properly");
     }));
 
-    it("checks delinquent winner contribute the right amount to be no longer be considered a delinquent", co(function*() {
-        let members = [accounts[1],accounts[2]];
+    it("checks delinquent winner contribute the right amount to be no longer be considered a delinquent",
+      co(function* () {
+        let members = [accounts[1], accounts[2]];
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             members, SERVICE_FEE_IN_THOUSANDTHS);
         let DEFAULT_POT = MEMBER_LIST.length * CONTRIBUTION_SIZE;
@@ -101,7 +102,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
 
         let eventFired = false;
         let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(function (error, log) {
+        fundsReleasedEvent.watch(function(error, log) {
             fundsReleasedEvent.stopWatching();
             eventFired = true;
             winnerAddress = log.args.winnerAddress;

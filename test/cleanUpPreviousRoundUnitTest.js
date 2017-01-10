@@ -109,7 +109,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         "win when only they are eligible", co(function* () {
         // 3 member rosca, where p1 is the only one in goodStanding and will win the Pot in round 1
         // in 2nd round check that one of the other two users (delinquents) get the pot
-        let memberList = [accounts[1],accounts[2]];
+        let memberList = [accounts[1], accounts[2]];
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             memberList, SERVICE_FEE_IN_THOUSANDTHS);
 

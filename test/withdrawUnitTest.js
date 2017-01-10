@@ -236,7 +236,8 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let currentRound = yield rosca.currentRound.call();
         let totalDiscount = DEFAULT_POT - BID_TO_PLACE;
-        let expectedCredit = (currentRound * CONTRIBUTION_SIZE) - utils.afterFee(totalDiscount / MEMBER_COUNT, SERVICE_FEE_IN_THOUSANDTHS);
+        let expectedCredit =
+        (currentRound * CONTRIBUTION_SIZE) - utils.afterFee(totalDiscount / MEMBER_COUNT, SERVICE_FEE_IN_THOUSANDTHS);
 
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
         let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
@@ -247,7 +248,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("does not allow delinquent people to withdraw even after winning, unless they pay their dues",
-            co(function*() {
+            co(function* () {
          // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
          // We check that the winner cannot withdraw their money in the next round, but once they pay up, they can.
          let members = [accounts[1]];
@@ -264,7 +265,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
          let eventFired = false;
          let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-         fundsReleasedEvent.watch(function (error, log) {
+         fundsReleasedEvent.watch(function(error, log) {
              fundsReleasedEvent.stopWatching();
              eventFired = true;
              winnerAddress = log.args.winnerAddress;
@@ -283,7 +284,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     }));
 
     it("delinquent cannot withdraw before end of rosca, can withdraw up to amount contributed after the end",
-        co(function*() {
+        co(function* () {
         // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
         // We check that the winner cannot withdraw their money until rosca has ended.
         // After rosca ended, we check that the winner can only withdraw the amount he contributed.
@@ -301,7 +302,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         let eventFired = false;
         let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(function (error, log) {
+        fundsReleasedEvent.watch(function(error, log) {
             fundsReleasedEvent.stopWatching();
             eventFired = true;
             winnerAddress = log.args.winnerAddress;

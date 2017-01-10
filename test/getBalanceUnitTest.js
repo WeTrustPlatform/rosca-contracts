@@ -102,7 +102,7 @@ contract('ROSCA getBalance Unit Test', function(accounts) {
 
         let eventFired = false;
         let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(function (error, log) {
+        fundsReleasedEvent.watch(function(error, log) {
             fundsReleasedEvent.stopWatching();
             eventFired = true;
             winnerAddress = log.args.winnerAddress;

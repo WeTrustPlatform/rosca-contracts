@@ -38,7 +38,6 @@ contract('fees unit test', function(accounts_) {
 
 
   function* getFeesInContractAfterLastRound(rosca) {
-
     // Wait another round.
     utils.increaseTime(ROUND_PERIOD);
 
@@ -155,7 +154,7 @@ contract('fees unit test', function(accounts_) {
       contribute(0, 1.5 * CONTRIBUTION_SIZE),
       contribute(1, CONTRIBUTION_SIZE),
 
-      bid(0, 0.9 * POT_SIZE)
+      bid(0, 0.9 * POT_SIZE),
     ]);
 
     utils.increaseTime(ROUND_PERIOD);
@@ -175,7 +174,7 @@ contract('fees unit test', function(accounts_) {
     let contractBalanceAfter = web3.eth.getBalance(rosca.address).toNumber();
     // withdrawal would be 0.5C(over contributed) + (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
     assert.equal(contractBalanceBefore - contractBalanceAfter, 0.5 * CONTRIBUTION_SIZE +
-        1.8 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE + 0.1 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE  ,
+        1.8 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE + 0.1 * NET_REWARDS_RATIO * CONTRIBUTION_SIZE,
         "fees got taken out of over contribution");
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2 * 2));  // 2 rounds, 2 participants.
@@ -200,7 +199,7 @@ contract('fees unit test', function(accounts_) {
     yield Promise.all([
       contribute(1, CONTRIBUTION_SIZE),
 
-      bid(0, 0.9 * POT_SIZE)
+      bid(0, 0.9 * POT_SIZE),
     ]);
 
     utils.increaseTime(ROUND_PERIOD);
@@ -252,7 +251,7 @@ contract('fees unit test', function(accounts_) {
     let expectedDiscount = (MEMBER_LIST.length * CONTRIBUTION_SIZE * 0.1) / MEMBER_LIST.length;
     // console.log(expectedDiscount);
     let expectedFees = (CONTRIBUTION_SIZE * (2 + 1.5) + expectedDiscount) / 1000 * SERVICE_FEE_IN_THOUSANDTHS;
-    assert.closeTo(Math.abs(1 - fees / expectedFees) , 0, 0.01, "actual: " + fees + ",expected: " + expectedFees);
+    assert.closeTo(Math.abs(1 - fees / expectedFees), 0, 0.01, "actual: " + fees + ",expected: " + expectedFees);
   }));
 
   it('checks if fees are applied to rolled over credits', co(function* () {

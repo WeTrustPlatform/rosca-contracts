@@ -2,6 +2,7 @@
 
 let assert = require('chai').assert;
 let consts = require("./consts.js");
+let Promise = require("bluebird");
 
 // we need this becaues test env is different than script env
 let myWeb3 = (typeof web3 === undefined ? undefined : web3);
@@ -11,7 +12,7 @@ module.exports = {
     myWeb3 = web3;
   },
 
-  afterFee : function(amount, serviceFeeInThousandths) {
+  afterFee: function(amount, serviceFeeInThousandths) {
     return amount / 1000 * (1000 - serviceFeeInThousandths);
   },
 
