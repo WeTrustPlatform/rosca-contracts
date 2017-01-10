@@ -1,0 +1,29 @@
+{
+  "extends": ["eslint:recommended", "./tools/eslint/google.eslintrc.json"],
+  "rules": {
+    // make line length 120
+    "max-len": [1, 120],
+    // make unused vars and functions only a warning
+    "no-unused-vars": [1, {args: 'none'}],
+     // reaplce to 2 to prefer single quotes, but just a warning otherwise
+    "quotes": [0, "single", {allowTemplateLiterals: true}],
+    // at this point of time, we do not require jsdoc
+    "require-jsdoc": 0,
+  },
+  "parserOptions": {
+    "ecmaVersion": 6,
+  },
+  // additional predefined global variables
+  "globals" : {
+      "before": false,
+      "beforeEach": false,
+      "contract": false,
+      "it": false,
+      "module": false,
+      "require": false,
+      "ROSCA": false,
+      "ROSCATest": false,
+      "TestReEntryAttack": false,
+      "web3": false
+  },
+}
