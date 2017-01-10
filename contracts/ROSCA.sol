@@ -403,6 +403,21 @@ contract ROSCA {
   }
 
   /**
+   * Returns how much a user can withdraw (positive return value),
+   * or how much they need to contribute to be in good standing (negative return value)
+   */
+  function getBalance(address user) onlyFromMember external returns(int256) {
+    int256 totalCredit = int256(members[user].credit + totalDiscounts);
+
+    if (members[user].debt) {
+        totalCredit -= int256(removeFees(membersAddresses.length * contributionSize));
+    }
+    int256 totalDebit = int256(currentRound * contributionSize);
+
+    return totalCredit - totalDebit;
+  }
+
+  /**
    * @dev Allows the foreperson to retrieve any surplus funds, one roundPeriodInDays after
    * the end of the ROSCA.
    *

@@ -105,18 +105,28 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         assert.isOk(winner[3], "a non member was chosen when there were no bids");
     }));
 
-    it("checks if random unpaid delinquent member is picked when no bid was placed and" +
-        "only delinquent members are eligible", co(function* () {
-        let memberList = [accounts[1]];
+    it("when no one bids, checks that non-delinquent members are preferred, but delinquent members can " +
+        "win when only they are eligible", co(function* () {
+        // 3 member rosca, where p1 is the only one in goodStanding and will win the Pot in round 1
+        // in 2nd round check that one of the other two users (delinquents) get the pot
+        let memberList = [accounts[1],accounts[2]];
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             memberList, SERVICE_FEE_IN_THOUSANDTHS);
 
-
+        let pot = (memberList.length + 1) * CONTRIBUTION_SIZE;
         utils.increaseTime(START_TIME_DELAY);
         yield rosca.startRound();
+        yield rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE});
+
+        utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+        yield rosca.startRound();
+
+        // check if p1 is the winner
+        let p1Credit = (yield rosca.members.call(accounts[1]))[0];
+        assert.equal(p1Credit.toString(), (CONTRIBUTION_SIZE + pot / 1000 * (1000 - SERVICE_FEE_IN_THOUSANDTHS)));
 
         let winner;
-        let possibleWinner = [accounts[0], accounts[1]];
+        let possibleWinner = [accounts[0], accounts[2]];
         let winnerAddress = 0;
 
         let eventFired = false;
