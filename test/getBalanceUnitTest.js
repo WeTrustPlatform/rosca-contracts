@@ -5,7 +5,7 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 
-contract('ROSCA getBalance Unit Test', function(accounts) {
+contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
     const ROUND_PERIOD_IN_DAYS = 3;
     const MIN_DAYS_BEFORE_START = 1;
@@ -19,7 +19,7 @@ contract('ROSCA getBalance Unit Test', function(accounts) {
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
     const NET_REWARDS_RATIO = ((1000 - SERVICE_FEE_IN_THOUSANDTHS) / 1000);
 
-    it("checks getBalance returns correct withdrawable value", co(function* () {
+    it("checks getParticipantBalance returns correct withdrawable value", co(function* () {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -36,7 +36,7 @@ contract('ROSCA getBalance Unit Test', function(accounts) {
 
         utils.increaseTime(ROUND_PERIOD_DELAY);
         yield rosca.startRound();
-        let balance = yield rosca.getBalance.call(accounts[2]);
+        let balance = yield rosca.getParticipantBalance.call(accounts[2]);
         let totalDiscounts = (yield rosca.totalDiscounts.call()).toNumber();
 
         // expected = Pot Won * Fee - next Round contribution
@@ -52,7 +52,7 @@ contract('ROSCA getBalance Unit Test', function(accounts) {
         assert.equal(contractBalanceBefore - contractBalanceAfter, balance);
     }));
 
-    it("checks that getBalance returns negative Value for delinquents (who haven't won the Pot)", co(function* () {
+    it("checks that getParticipantBalance returns negative value for delinquents (who haven't won the Pot)", co(function* () {
         let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -63,7 +63,7 @@ contract('ROSCA getBalance Unit Test', function(accounts) {
         // test by calling withdraw, which should throw and
         // make contribution > than balance, and call withdraw
 
-        let balance = (yield rosca.getBalance.call(accounts[1]));
+        let balance = (yield rosca.getParticipantBalance.call(accounts[1]));
 
         let expectedBalance = - CONTRIBUTION_SIZE;
         assert.equal(balance, expectedBalance);
@@ -80,7 +80,7 @@ contract('ROSCA getBalance Unit Test', function(accounts) {
         assert.equal(contractBalanceBefore - contractBalanceAfter, EXTRA_CONTRIBUTION);
     }));
 
-    it("checks that getBalance returns negative Value for delinquents (who already won the Pot)", co(function* () {
+    it("checks that getParticipantBalance returns negative value for delinquents (who already won the Pot)", co(function* () {
         // 3 member rosca, p1 contribute 5 * CONTRIBUTION_SIZE and win round 1
         let memberList = [accounts[1], accounts[2]];
         let pot = (memberList.length + 1) * CONTRIBUTION_SIZE;
@@ -118,7 +118,7 @@ contract('ROSCA getBalance Unit Test', function(accounts) {
         // test by calling withdraw, which should throw and
         // make contribution = than balance, and call withdraw
 
-        let balance = (yield rosca.getBalance.call(winnerAddress));
+        let balance = (yield rosca.getParticipantBalance.call(winnerAddress));
 
         // currentRound is 3 so expected balance = 3 * CONTRIBUTION_SIZE - 0.5 * CONTRIBUTION_SIZE(already contributed)
         let expectedBalance = - 2.5 * CONTRIBUTION_SIZE;

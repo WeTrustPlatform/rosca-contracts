@@ -406,7 +406,7 @@ contract ROSCA {
    * Returns how much a user can withdraw (positive return value),
    * or how much they need to contribute to be in good standing (negative return value)
    */
-  function getBalance(address user) onlyFromMember external returns(int256) {
+  function getParticipantBalance(address user) onlyFromMember external constant returns(int256) {
     int256 totalCredit = int256(members[user].credit + totalDiscounts);
 
     if (members[user].debt) {
@@ -415,6 +415,14 @@ contract ROSCA {
     int256 totalDebit = int256(currentRound * contributionSize);
 
     return totalCredit - totalDebit;
+  }
+
+  /**
+   * Returns the amount of funds this contract holds excluding fees. This is
+   * the amount withdrawable by participants.
+   */
+  function getContractNetBalance() external constant returns(uint256) {
+    return this.balance - totalFees;
   }
 
   /**
