@@ -1,3 +1,5 @@
+'use strict';
+
 let fs = require('fs');
 let solc = require('solc');
 let path = require('path');
