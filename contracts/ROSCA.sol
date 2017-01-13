@@ -458,11 +458,6 @@ contract ROSCA {
    * does the bookeeping of that round.
    */
   function endOfROSCARetrieveFees() onlyFromFeeAddress roscaEnded external returns (bool) {
-    uint256 roscaCollectionTime = startTime + (membersAddresses.length + 1) * roundPeriodInDays * 1 days;
-    if (now < roscaCollectionTime || totalFees == 0) {
-      throw;
-    }
-
     uint256 tempTotalFees = totalFees;  // prevent re-entry.
     totalFees = 0;
     if (!FEE_ADDRESS.send(tempTotalFees)) {   // if the send() fails, restore totalFees
