@@ -6,7 +6,7 @@ pragma solidity ^0.4.4;
  * A ROSCA (Rotating and Savings Credit Association) is an agreement between
  * trusted friends to contribute funds on a periodic basis to a "pot", and in
  * each round one of the participants receives the pot (termed "winner").
- * The winner is selected as the person who makes the lowest bit in that round
+ * The winner is selected as the person who makes the lowest bid in that round
  * among those who have not won a bid before.
  * The discount (gap between bid and total round contributions) is dispersed
  * evenly between the participants.
@@ -81,14 +81,14 @@ contract ROSCA {
   bool internal forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
   // of discounts accumulated so far, divided by the number of ROSCA participants.
-  uint256 internal totalDiscounts;
+  uint256 internal totalDiscounts = 0;
 
   // Amount of fees reserved in the contract for fees.
   uint256 internal totalFees = 0;
 
   // Round state variables
-  uint256 internal lowestBid;
-  address internal winnerAddress;  // bidder who bid the lowest so far
+  uint256 internal lowestBid = 0;
+  address internal winnerAddress = 0;  // bidder who bid the lowest so far
 
   mapping(address => User) internal members;
   address[] internal membersAddresses;  // for iterating through members' addresses
@@ -105,7 +105,7 @@ contract ROSCA {
   bool internal escapeHatchActive = false;
 
   struct User {
-    uint256 credit;  // amount of funds user has contributed + winnings (not including discounts) so far
+    uint256 credit;  // amount of funds user has contributed - winnings (not including discounts) so far
     bool debt; // true if user won the pot while not in good standing and is still not in good standing
     bool paid; // yes if the member had won a Round
     bool alive; // needed to check if a member is indeed a member
@@ -272,7 +272,7 @@ contract ROSCA {
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
     if (winnerAddress == delinquentWinner) {
-      // Set the flag ot true so we know this user cannot withdraw until debt has been paid.
+      // Set the flag to true so we know this user cannot withdraw until debt has been paid.
       members[winnerAddress].debt = true;
     }
     members[winnerAddress].credit += removeFees(lowestBid);
@@ -297,7 +297,6 @@ contract ROSCA {
       if (credit + totalDiscounts < debit) {
         grossTotalFees -= debit - credit - totalDiscounts;
       }
-      uint256 delinquency = requiredContributions - credit - totalDiscounts;
     }
 
     totalFees = grossTotalFees * serviceFeeInThousandths / 1000;
@@ -340,7 +339,7 @@ contract ROSCA {
    *   plus any past earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bidInWei) onlyIfEscapeHatchInactive external {
+  function bid(uint256 bidInWei) onlyFromMember roscaNotEnded onlyIfEscapeHatchInactive external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing
