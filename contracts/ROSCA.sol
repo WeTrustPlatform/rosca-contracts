@@ -265,16 +265,14 @@ contract ROSCA {
       }
       if (winnerAddress == 0) {
         winnerAddress = delinquentWinner;
+        // Set the flag to true so we know this user cannot withdraw until debt has been paid.
+        members[winnerAddress].debt = true;
       }
       // Set lowestBid to the right value since there was no winning bid.
       lowestBid = contributionSize * membersAddresses.length;
     }
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
-    if (winnerAddress == delinquentWinner) {
-      // Set the flag to true so we know this user cannot withdraw until debt has been paid.
-      members[winnerAddress].debt = true;
-    }
     members[winnerAddress].credit += removeFees(lowestBid);
     members[winnerAddress].paid = true;
     LogRoundFundsReleased(winnerAddress, lowestBid);
