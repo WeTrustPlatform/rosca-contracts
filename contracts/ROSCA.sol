@@ -246,15 +246,20 @@ contract ROSCA {
 
   function cleanUpPreviousRound() internal {
     address delinquentWinner = 0x0;
+    uint256 winnerIndex;
+    bool winnerSelectedThroughBid = (winnerAddress != 0);
+    uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
     if (winnerAddress == 0) {
       // There was no bid in this round. Find an unpaid address for this epoch.
       // Give priority to members in good standing (not delinquent).
       // Note this randomness does not require high security, that's why we feel ok with using the block's timestamp.
       // Everyone will be paid out eventually.
-      uint256 semi_random = now % membersAddresses.length;
-      for (uint16 i = 0; i < membersAddresses.length; i++) {
-        address candidate = membersAddresses[(semi_random + i) % membersAddresses.length];
+      uint256 semi_random = now % numUnpaidParticipants;
+      for (uint16 i = 0; i < numUnpaidParticipants; i++) {
+        uint256 index = (semi_random + i) % numUnpaidParticipants;
+        address candidate = membersAddresses[index];
         if (!members[candidate].paid) {
+          winnerIndex = index;
           if (members[candidate].credit + totalDiscounts >= (currentRound * contributionSize)) {
             // We found a non-delinquent winner.
             winnerAddress = candidate;
@@ -263,7 +268,7 @@ contract ROSCA {
           delinquentWinner = candidate;
         }
       }
-      if (winnerAddress == 0) {
+      if (winnerAddress == 0) {  // we did not find any non-delinquent winner.
         winnerAddress = delinquentWinner;
         // Set the flag to true so we know this user cannot withdraw until debt has been paid.
         members[winnerAddress].debt = true;
@@ -271,6 +276,11 @@ contract ROSCA {
       // Set lowestBid to the right value since there was no winning bid.
       lowestBid = contributionSize * membersAddresses.length;
     }
+    // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
+    // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
+    // next unpaid member).
+    swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
+
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
     members[winnerAddress].credit += removeFees(lowestBid);
@@ -298,6 +308,25 @@ contract ROSCA {
     }
 
     totalFees = grossTotalFees * serviceFeeInThousandths / 1000;
+  }
+
+  // Swaps membersAddresses[winnerIndex] with membersAddresses[indexToSwap]. However,
+  // if winner was selected through a bid, winnerIndex was not set, and we find it first.
+  function swapWinner(
+    uint256 winnerIndex, bool winnerSelectedThroughBid, uint256 indexToSwap) internal {
+    if (winnerSelectedThroughBid) {
+      // Since winner was selected through a bid, we were not able to set winnerIndex, so search
+      // for the winner among the unpaid participants.
+      for (uint16 i = 0; i <= indexToSwap; i++) {
+        if (membersAddresses[i] == winnerAddress) {
+          winnerIndex = i;
+          break;
+        }
+      }
+    }
+    // We now want to swap winnerIndex with indexToSwap, but we already know membersAddresses[winnerIndex] == winnerAddress.
+    membersAddresses[winnerIndex] = membersAddresses[indexToSwap];
+    membersAddresses[indexToSwap] = winnerAddress;
   }
 
   // Calculates the specified amount net amount after fees.
