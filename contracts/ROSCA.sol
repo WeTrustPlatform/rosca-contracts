@@ -435,7 +435,8 @@ contract ROSCA {
   function getParticipantBalance(address user) onlyFromMember external constant returns(int256) {
     int256 totalCredit = int256(members[user].credit + totalDiscounts);
 
-    if (members[user].debt) {
+    // if rosca have ended, we don't need to subtract as totalDebit should equal to default winnings
+    if (members[user].debt && !endOfROSCA) {
         totalCredit -= int256(removeFees(membersAddresses.length * contributionSize));
     }
     int256 totalDebit = int256(currentRound * contributionSize);
