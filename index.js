@@ -27,8 +27,8 @@ let init = function() {
 
   let contractCode = fs.readFileSync(roscaContractLocation, 'utf8');
   let output = solc.compile(contractCode, 1);
-  let roscaContractAbi = JSON.parse(output.contracts.ROSCA.interface);
-  let bytecode = output.contracts.ROSCA.bytecode;
+  let roscaContractAbi = JSON.parse(output.contracts[':ROSCA'].interface);
+  let bytecode = output.contracts[':ROSCA'].bytecode;
   contractCache = {abi: roscaContractAbi, bytecode: bytecode};
 };
 
