@@ -269,6 +269,8 @@ contract ROSCA {
         }
       }
       if (winnerAddress == 0) {  // we did not find any non-delinquent winner.
+        // Perform some basic sanity checks.
+        if (delinquentWinner == 0 || members[delinquentWinner].paid) throw;
         winnerAddress = delinquentWinner;
         // Set the flag to true so we know this user cannot withdraw until debt has been paid.
         members[winnerAddress].debt = true;
@@ -286,8 +288,11 @@ contract ROSCA {
     members[winnerAddress].credit += removeFees(lowestBid);
     members[winnerAddress].paid = true;
     LogRoundFundsReleased(winnerAddress, lowestBid);
+    recalculateTotalFees();
+  }
 
-    // Recalculate totalFees:
+  // Recalculates that total fees that should be allocated in the contract.
+  function recalculateTotalFees() {
     // Start with the max theoretical fees if no one was delinquent, and
     // reduce funds not actually contributed because of delinquencies.
     uint256 requiredContributions = currentRound * contributionSize;
