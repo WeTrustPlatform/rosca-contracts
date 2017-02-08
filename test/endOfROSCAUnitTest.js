@@ -2,6 +2,7 @@
 
 let assert = require('chai').assert;
 let co = require("co").wrap;
+let Promise = require("bluebird");
 let utils = require("./utils/utils.js");
 
 contract('end of ROSCA unit test', function(accounts) {
@@ -35,7 +36,8 @@ contract('end of ROSCA unit test', function(accounts) {
       }
     }
 
-    it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order", co(function* () {
+    it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order + check event",
+        co(function* () {
       let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
@@ -46,8 +48,24 @@ contract('end of ROSCA unit test', function(accounts) {
       let contractCredit = yield utils.contractNetCredit(rosca);
       assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
+      let eventFired = false;
+      let surplusWithdrawalEvent = rosca.LogForepersonSurplusWithdrawal();  // eslint-disable-line new-cap
+      surplusWithdrawalEvent.watch(function(error, log) {
+          surplusWithdrawalEvent.stopWatching();
+          eventFired = true;
+          assert.equal(log.args.user, accounts[0], "LogForepersonSurplusWithdrawal doesn't display proper user value");
+          assert.equal(log.args.amount, contractCredit,
+              "LogForepersonSurplusWithdrawal doesn't display proper amount value");
+      });
+
       let forepersonBalanceBefore = web3.eth.getBalance(accounts[0]);
+
       yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
+
+      yield Promise.delay(300); // 300ms delay to allow the event to fire properly
+      assert.isOk(eventFired, "LogForepersonSurplusWithdrawal event did not fire");
+
+
       let forepersonBalanceAfter = web3.eth.getBalance(accounts[0]);
 
       utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, contractCredit);

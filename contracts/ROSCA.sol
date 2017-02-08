@@ -52,6 +52,7 @@ contract ROSCA {
   event LogRoundFundsReleased(address winnerAddress, uint256 amountInWei);
   event LogRoundNoWinner(uint256 currentRound);
   event LogFundsWithdrawal(address user, uint256 amount);
+  event LogForepersonSurplusWithdrawal(address user, uint256 amount);
   // Fired when withdrawer is entitled for a larger amount than the contract
   // actually holds (excluding fees). A LogFundsWithdrawal will follow
   // this event with the actual amount released, if send() is successful.
@@ -478,7 +479,7 @@ contract ROSCA {
       forepersonSurplusCollected = false;
       return false;
     } else {
-      LogFundsWithdrawal(foreperson, amountToCollect);
+      LogForepersonSurplusWithdrawal(foreperson, amountToCollect);
     }
   }
 
