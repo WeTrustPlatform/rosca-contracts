@@ -53,7 +53,6 @@ contract('end of ROSCA unit test', function(accounts) {
       surplusWithdrawalEvent.watch(function(error, log) {
           surplusWithdrawalEvent.stopWatching();
           eventFired = true;
-          assert.equal(log.args.user, accounts[0], "LogForepersonSurplusWithdrawal doesn't display proper user value");
           assert.equal(log.args.amount, contractCredit,
               "LogForepersonSurplusWithdrawal doesn't display proper amount value");
       });
