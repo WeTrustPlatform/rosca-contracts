@@ -1,6 +1,6 @@
 {
   "name": "wetrust-rosca-contract",
-  "version": "0.0.11",
+  "version": "0.0.13",
   "description": "ROSCA contract for Ethereum",
   "main": "index.js",
   "directories": {
