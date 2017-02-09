@@ -365,14 +365,14 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.isAbove(p0balanceAfter - p0balanceBefore,
         2.0 * CONTRIBUTION_SIZE / 1000 * NET_REWARDS_RATIO);
 
-    // Only the feeCollector can collect the fees.
+    // Only the foreperson can collect the fees.
     yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
 
-    let feeCollectorBalanceBefore = web3.eth.getBalance(accounts[9]).toNumber();
-    yield rosca.endOfROSCARetrieveFees({from: accounts[9]});
-    let feeCollectorBalanceAfter = web3.eth.getBalance(accounts[9]).toNumber();
+    let forepersonBalanceBefore = web3.eth.getBalance(accounts[0]).toNumber();
+    yield rosca.endOfROSCARetrieveFees({from: accounts[0]});
+    let forepersonBalanceAfter = web3.eth.getBalance(accounts[0]).toNumber();
     // Accounting for gas, we can't expect the entire funds to be transferred to p0.
     // TODO(ronme): more precise calculations after we move to the contribs/winnings model.
-    assert.isAbove(feeCollectorBalanceAfter, feeCollectorBalanceBefore);
+    assert.isAbove(forepersonBalanceAfter, forepersonBalanceBefore);
   }));
 });

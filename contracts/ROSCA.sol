@@ -33,11 +33,6 @@ contract ROSCA {
   // Every new bid has to be at most this much of the previous lowest bid
   uint8 constant internal MAX_NEXT_BID_RATIO = 98;
 
-  // TODO: MUST change this prior to production. Currently this is accounts[9] of the testrpc config
-  // used in tests.
-  // Address from which fees can be withdrawn.
-  address constant internal FEE_ADDRESS = 0x1df62f291b2e969fb0849d99d9ce41e2f137006e;
-
   // TODO(ron): replace this with an actual wallet. Right now this is accounts[9] of the testrpc used
   // by tests.
   // WeTrust's account from which Escape Hatch can be enanbled.
@@ -52,13 +47,14 @@ contract ROSCA {
   event LogRoundFundsReleased(address winnerAddress, uint256 amountInWei);
   event LogRoundNoWinner(uint256 currentRound);
   event LogFundsWithdrawal(address user, uint256 amount);
-  event LogForepersonSurplusWithdrawal(uint256 amount);
   // Fired when withdrawer is entitled for a larger amount than the contract
   // actually holds (excluding fees). A LogFundsWithdrawal will follow
   // this event with the actual amount released, if send() is successful.
   event LogCannotWithdrawFully(uint256 creditAmount);
   event LogUnsuccessfulBid(address bidder,uint256 bidInWei,uint256 lowestBid);
   event LogEndOfROSCA();
+  event LogForepersonSurplusWithdrawal(uint256 amount);
+  event LogFeesWithdrawal(uint256 amount);
 
   // Escape hatch related events.
   event LogEscapeHatchEnabled();
@@ -124,13 +120,6 @@ contract ROSCA {
 
   modifier onlyFromForeperson {
     if (msg.sender != foreperson) {
-      throw;
-    }
-    _;
-  }
-
-  modifier onlyFromFeeAddress {
-    if (msg.sender != FEE_ADDRESS) {
       throw;
     }
     _;
@@ -460,12 +449,13 @@ contract ROSCA {
 
   /**
    * @dev Allows the foreperson to retrieve any surplus funds, one roundPeriodInDays after
-   * the end of the ROSCA.
+   * the end of the ROSCA. Note this does not retrieve the foreperson's fees, which should
+   * be retireved by calling endOfROSCARetrieveFees.
    *
    * Note that startRound() must be called first after the last round, as it
    * does the bookeeping of that round.
    */
-  function endOfROSCARetrieveSurplus() onlyFromForeperson roscaEnded external returns (bool) {
+  function endOfROSCARetrieveSurplus() onlyFromForeperson roscaEnded external {
     uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
     if (now < roscaCollectionTime || forepersonSurplusCollected) {
         throw;
@@ -477,32 +467,30 @@ contract ROSCA {
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       forepersonSurplusCollected = false;
-      return false;
     } else {
       LogForepersonSurplusWithdrawal(amountToCollect);
     }
   }
 
   /**
-   * @dev Allows the fee collector to extract the fees in the contract. Can be called
-   * only ine roundPeriodInDays after the end of the ROSCA.
+   * @dev Allows the foreperson to extract the fees in the contract. Can be called
+   * after the end of the ROSCA.
    *
    * Note that startRound() must be called first after the last round, as it
    * does the bookeeping of that round.
    */
-  function endOfROSCARetrieveFees() onlyFromFeeAddress roscaEnded external returns (bool) {
+  function endOfROSCARetrieveFees() onlyFromForeperson roscaEnded external {
     if (totalFees == 0) {
       throw;
     }
     uint256 tempTotalFees = totalFees;  // prevent re-entry.
     totalFees = 0;
-    if (!FEE_ADDRESS.send(tempTotalFees)) {   // if the send() fails, restore totalFees
+    if (!foreperson.send(tempTotalFees)) {   // if the send() fails, restore totalFees
       // No need to call throw here, just reset the amount owing. This may happen
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       totalFees = tempTotalFees;
-      return false;
     } else {
-      LogFundsWithdrawal(FEE_ADDRESS, totalFees);
+      LogFeesWithdrawal(totalFees);
     }
   }
 
