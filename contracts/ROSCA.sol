@@ -490,7 +490,7 @@ contract ROSCA {
       // for nonmalicious reasons, e.g. the receiving contract running out of gas.
       totalFees = tempTotalFees;
     } else {
-      LogFeesWithdrawal(totalFees);
+      LogFeesWithdrawal(tempTotalFees);
     }
   }
 
