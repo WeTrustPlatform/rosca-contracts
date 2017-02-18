@@ -23,7 +23,8 @@ contract ROSCA {
   uint16 constant internal MAX_FEE_IN_THOUSANDTHS = 20;
 
   // Start time of the ROSCA must be at least this much time ahead of when the ROSCA is created
-  uint32 constant internal MINIMUM_TIME_BEFORE_ROSCA_START = 1 days;
+  // Note: right now we allow
+  uint32 constant internal MINIMUM_TIME_BEFORE_ROSCA_START = 0;
 
   uint8 constant internal MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint8 constant internal MAX_ROUND_PERIOD_IN_DAYS = 30;

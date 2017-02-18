@@ -75,10 +75,10 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let blockTime = latestBlock.timestamp;
 
         let deployed = ROSCATest.deployed();
-        let MINIMUM_TIME_BEFORE_ROSCA_START = yield deployed.MINIMUM_TIME_BEFORE_ROSCA_START.call();
+        let MINIMUM_TIME_BEFORE_ROSCA_START = (yield deployed.MINIMUM_TIME_BEFORE_ROSCA_START.call()).toNumber();
 
         yield utils.assertThrows(ROSCATest.new(
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MINIMUM_TIME_BEFORE_ROSCA_START / 2, MEMBER_LIST,
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MINIMUM_TIME_BEFORE_ROSCA_START - 1, MEMBER_LIST,
             SERVICE_FEE_IN_THOUSANDTHS));
     }));
 
