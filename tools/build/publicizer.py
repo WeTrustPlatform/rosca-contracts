@@ -6,7 +6,8 @@ Usage: publicizer.py SomeContract.sol
 Prepares a contract for testing by creating a new file SomeContractTest.sol
 which contains a modified version of the original contents:
 * the contract name "SomeContract" is replaced with "SomeContractTest"
-* "internal" and "private" are replaced with "public"
+* "internal" and "private" are replaced with "public" unless the string "doNotMakePublic"
+  appears in the line
 
 """
 
@@ -20,10 +21,17 @@ import time
 def substitute(content):
   """Does the actual substitution"""
 
-  internalOrPrivateRe = re.compile(r'\s+(internal|private)\s*')
-  replaceWith = ' public /* modifiedForTest */ '
+  lines = content.split('\n')
 
-  replacedContent = internalOrPrivateRe.sub(replaceWith, content)
+  for i in range(0, len(lines)):
+    line = lines[i]
+    if "dontMakePublic" in line:
+      continue
+    internalOrPrivateRe = re.compile(r'\s+(internal|private)\s*')
+    replaceWith = ' public /* modifiedForTest */ '
+    lines[i] = internalOrPrivateRe.sub(replaceWith, line)
+  replacedContent = '\n'.join(lines)
+
 
   contractNameMatch = re.search(r'contract\s+(\w+)\s*{', replacedContent)
   if not contractNameMatch:

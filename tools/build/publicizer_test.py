@@ -36,14 +36,17 @@ class PublicizerTest(unittest.TestCase):
         "uint256 public /* modifiedForTest */ x;",
         "uint256 private x;")
 
+  def test_does_not_changes_private_to_public_if_dontMakePublic(self):
+    self.assert_not_publicized(
+        "uint256 internal x;  // dontMakePublic")
+
+  def test_does_not_changes_internal_to_public_if_dontMakePublic(self):
+    self.assert_not_publicized(
+        "uint256 private x;  // dontMakePublic")
+
   def test_does_not_change_other_modifiers(self):
     self.assert_not_publicized(
         "uint256 external x;")
-
-  def test_eats_whitespace(self):
-    self.assert_publicized(
-        "uint256 public /* modifiedForTest */ y;",
-        "uint256   \n internal   y;")
 
   def replaces_contract_name(self):
     self.assert_publicized(

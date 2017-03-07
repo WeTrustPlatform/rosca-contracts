@@ -37,7 +37,7 @@ contract ROSCA {
   // TODO(ron): replace this with an actual wallet. Right now this is accounts[9] of the testrpc used
   // by tests.
   // WeTrust's account from which Escape Hatch can be enanbled.
-  address constant internal ESCAPE_HATCH_ENABLER = 0x1df62f291b2e969fb0849d99d9ce41e2f137006e;
+  address constant internal ESCAPE_HATCH_ENABLER = 0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e;
 
   /////////
   // EVENTS
