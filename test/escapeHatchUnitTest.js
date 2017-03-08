@@ -13,6 +13,7 @@ contract('Escape Hatch unit test', function(accounts) {
   const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
   const MEMBER_COUNT = MEMBER_LIST.length + 1;  // foreperson
   const CONTRIBUTION_SIZE = 1e16;
+  let ESCAPE_HATCH_ENABLER;
 
   // Runs the ROSCA 2 rounds. Everyone contributes, no one withdraws.
   function* runRoscUpToAPoint(rosca) {
@@ -30,13 +31,17 @@ contract('Escape Hatch unit test', function(accounts) {
   }
 
   it("checks that only Invoker can enable the escape hatch", co(function* () {
+    // For some reason can't make the beforeXXX() functions to work, so doing it the ugly
+    // way of setting this var in the first test.
+    ESCAPE_HATCH_ENABLER = yield ROSCATest.deployed().ESCAPE_HATCH_ENABLER.call();
+
     let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     yield utils.assertThrows(rosca.enableEscapeHatch({from: accounts[0]}));  // foreperson
     yield utils.assertThrows(rosca.enableEscapeHatch({from: accounts[3]}));  // member
     // Doesn't throw.
-    yield rosca.enableEscapeHatch({from: accounts[9]});  // member
+    yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // member
   }));
 
   it("checks that only foreperson can activate the escape hatch and that too only when enabled", co(function* () {
@@ -44,14 +49,14 @@ contract('Escape Hatch unit test', function(accounts) {
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     yield utils.assertThrows(rosca.activateEscapeHatch({from: accounts[3]}));  // member
-    yield utils.assertThrows(rosca.activateEscapeHatch({from: accounts[9]}));  // WeTrust
+    yield utils.assertThrows(rosca.activateEscapeHatch({from: ESCAPE_HATCH_ENABLER}));
     // foreperson can't activate either, as escape hatch isn't enabled.
     yield utils.assertThrows(rosca.activateEscapeHatch({from: accounts[0]}));
 
     // Enable. Now only the foreperson should be able to activate.
-    yield rosca.enableEscapeHatch({from: accounts[9]});  // escape hatch enabler
+    yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
     yield utils.assertThrows(rosca.activateEscapeHatch({from: accounts[3]}));  // member
-    yield utils.assertThrows(rosca.activateEscapeHatch({from: accounts[9]}));  // WeTrust
+    yield utils.assertThrows(rosca.activateEscapeHatch({from: ESCAPE_HATCH_ENABLER}));
     yield rosca.activateEscapeHatch({from: accounts[0]});  // does not throw
   }));
 
@@ -59,7 +64,7 @@ contract('Escape Hatch unit test', function(accounts) {
     let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
-    yield rosca.enableEscapeHatch({from: accounts[9]});  // escape hatch enabler
+    yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
 
     yield rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE * 7});
     yield rosca.withdraw({from: accounts[1]});
@@ -69,7 +74,7 @@ contract('Escape Hatch unit test', function(accounts) {
     let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
-    yield rosca.enableEscapeHatch({from: accounts[9]});  // escape hatch enabler
+    yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
     yield rosca.activateEscapeHatch({from: accounts[0]});
 
     yield utils.assertThrows(rosca.contribute(CONTRIBUTION_SIZE* 7, {from: accounts[1]}));
@@ -82,10 +87,10 @@ contract('Escape Hatch unit test', function(accounts) {
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     utils.assertThrows(rosca.emergencyWithdrawal({from: accounts[0]}));  // not enabled and active
-    yield rosca.enableEscapeHatch({from: accounts[9]});
+    yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});
     utils.assertThrows(rosca.emergencyWithdrawal({from: accounts[0]}));  // not active
     yield rosca.activateEscapeHatch({from: accounts[0]});
-    utils.assertThrows(rosca.emergencyWithdrawal({from: accounts[9]}));  // not by foreperson
+    utils.assertThrows(rosca.emergencyWithdrawal({from: ESCAPE_HATCH_ENABLER}));  // not by foreperson
     utils.assertThrows(rosca.emergencyWithdrawal({from: accounts[1]}));  // not by foreperson
 
     let forepersonBalanceBefore = web3.eth.getBalance(accounts[0]);
