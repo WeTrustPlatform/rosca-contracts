@@ -1,4 +1,4 @@
-import "./ROSCATest.sol";
+import "../ROSCATest.sol";
 
 pragma solidity ^0.4.4;
 
