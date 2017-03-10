@@ -22,9 +22,10 @@ contract ROSCA {
   // Maximum fee (in 1/1000s) from dispersements that is shared between foreperson and other stakeholders..
   uint16 constant internal MAX_FEE_IN_THOUSANDTHS = 20;
 
-  // Start time of the ROSCA must be at least this much time ahead of when the ROSCA is created
-  // Note: right now we allow
-  uint32 constant internal MINIMUM_TIME_BEFORE_ROSCA_START = 0;
+  // Start time of the ROSCA must be not more than this much time ago when the ROSCA is created
+  // This is to prevent accidental or malicious deployment of ROSCAs that are supposedly
+  // already in round number X > 1 and participants are supposedly delinquent.
+  uint32 constant internal MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS = 900;  // 15 minutes
 
   uint8 constant internal MIN_ROUND_PERIOD_IN_DAYS = 1;
   uint8 constant internal MAX_ROUND_PERIOD_IN_DAYS = 30;
@@ -185,7 +186,7 @@ contract ROSCA {
     }
     contributionSize = contributionSize_;
 
-    if (startTime_ < (now + MINIMUM_TIME_BEFORE_ROSCA_START)) {
+    if (startTime_ < (now - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS)) {
       throw;
     }
     startTime = startTime_;

@@ -68,18 +68,19 @@ contract('ROSCA constructor Unit Test', function(accounts) {
             SERVICE_FEE_IN_THOUSANDTHS), "contract creation successful");
     }));
 
-    it("Throws if startTime < now + MINIMUM_TIME_BEFORE_ROSCA_START", co(function* () {
+    it("Throws if startTime > now - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS", co(function* () {
         utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
         let deployed = ROSCATest.deployed();
-        let MINIMUM_TIME_BEFORE_ROSCA_START = (yield deployed.MINIMUM_TIME_BEFORE_ROSCA_START.call()).toNumber();
+        let MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS =
+            (yield deployed.MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS.call()).toNumber();
 
         yield utils.assertThrows(ROSCATest.new(
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MINIMUM_TIME_BEFORE_ROSCA_START - 1, MEMBER_LIST,
-            SERVICE_FEE_IN_THOUSANDTHS));
+            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS - 1,
+            MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS));
     }));
 
     it("Throws if feeInThousandths > MAX_FEE_IN_THOUSANTHS", co(function* () {
