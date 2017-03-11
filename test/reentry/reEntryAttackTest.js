@@ -27,6 +27,7 @@ contract('ROSCA reentry attack test', function(accounts) {
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
     let rosca = yield ROSCATest.new(
+        0  /* use ETH */,
         ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, [attackContract.address],
         SERVICE_FEE_IN_THOUSANDTHS, {from: accounts[0]});
 

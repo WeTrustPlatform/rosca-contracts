@@ -58,7 +58,8 @@ contract('fees unit test', function(accounts_) {
     let latestBlock = web3.eth.getBlock('latest');
     let blockTime = latestBlock.timestamp;
     ROSCATest.new(
-      ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, accounts.slice(1, 2),
+     0  /* use ETH */,
+     ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, accounts.slice(1, 2),
       SERVICE_FEE_IN_THOUSANDTHS)
       .then(function(aRosca) {
         rosca = aRosca;
@@ -274,5 +275,3 @@ contract('fees unit test', function(accounts_) {
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2));  // 2 rounds, only one in goodStanding
   }));
 });
-
-

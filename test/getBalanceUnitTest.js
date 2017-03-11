@@ -20,7 +20,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
     const NET_REWARDS_RATIO = ((1000 - SERVICE_FEE_IN_THOUSANDTHS) / 1000);
 
     it("checks getParticipantBalance returns correct withdrawable value", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         yield Promise.all([
@@ -52,8 +52,9 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         assert.equal(contractBalanceBefore - contractBalanceAfter, balance);
     }));
 
-    it("checks that getParticipantBalance returns negative value for delinquents (who haven't won the Pot)", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+    it("checks that getParticipantBalance returns negative value for delinquents " +
+       "(who haven't won the pot)", co(function* () {
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
@@ -80,11 +81,12 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         assert.equal(contractBalanceBefore - contractBalanceAfter, EXTRA_CONTRIBUTION);
     }));
 
-    it("checks that getParticipantBalance returns negative value for delinquents (who already won the Pot)", co(function* () {
+    it("checks that getParticipantBalance returns negative value for delinquents " +
+       "(who already won the pot)", co(function* () {
         // 3 member rosca, p1 contribute 5 * CONTRIBUTION_SIZE and win round 1
         let memberList = [accounts[1], accounts[2]];
         let pot = (memberList.length + 1) * CONTRIBUTION_SIZE;
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             memberList, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);

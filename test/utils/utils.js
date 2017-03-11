@@ -28,15 +28,22 @@ module.exports = {
     });
   },
 
-  createROSCA: function(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+  createROSCA: function(ERC20Address, ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
                         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS) {
     this.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
     return ROSCATest.new(
+        ERC20Address,
         ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
         SERVICE_FEE_IN_THOUSANDTHS);
+  },
+
+  createEthROSCA: function(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+                           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS) {
+    return this.createROSCA(0 /* use ETH */, ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE,
+                            START_TIME_DELAY, MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
   },
 
   contractNetCredit: function* (rosca) {

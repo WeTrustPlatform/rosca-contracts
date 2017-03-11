@@ -35,7 +35,7 @@ contract('Escape Hatch unit test', function(accounts) {
     // way of setting this var in the first test.
     ESCAPE_HATCH_ENABLER = yield ROSCATest.deployed().ESCAPE_HATCH_ENABLER.call();
 
-    let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     yield utils.assertThrows(rosca.enableEscapeHatch({from: accounts[0]}));  // foreperson
@@ -45,7 +45,7 @@ contract('Escape Hatch unit test', function(accounts) {
   }));
 
   it("checks that only foreperson can activate the escape hatch and that too only when enabled", co(function* () {
-    let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     yield utils.assertThrows(rosca.activateEscapeHatch({from: accounts[3]}));  // member
@@ -61,7 +61,7 @@ contract('Escape Hatch unit test', function(accounts) {
   }));
 
   it("checks that when escape hatch is enabled but not activated, contribute and withdraw still work", co(function* () {
-    let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
@@ -71,7 +71,7 @@ contract('Escape Hatch unit test', function(accounts) {
   }));
 
   it("checks that once escape hatch is activated, contribute and withdraw throw", co(function* () {
-    let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
@@ -83,7 +83,7 @@ contract('Escape Hatch unit test', function(accounts) {
 
   it("checks that emergencyWithdrawal can only be called when escape hatch is enabled and active, and that " +
      "too only by foreperson", co(function* () {
-    let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
     yield* runRoscUpToAPoint(rosca);
     utils.assertThrows(rosca.emergencyWithdrawal({from: accounts[0]}));  // not enabled and active

@@ -38,7 +38,7 @@ contract('end of ROSCA unit test', function(accounts) {
 
     it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order + check event",
         co(function* () {
-      let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+      let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
       yield rosca.startRound();  // cleans up the last round
@@ -81,7 +81,7 @@ contract('end of ROSCA unit test', function(accounts) {
     }));
 
     it("checks if endOfROSCARetrieve{Fees, Surplus} retrieve the funds when called in this order", co(function* () {
-      let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+      let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
       yield rosca.startRound();  // cleans up the last round
@@ -110,7 +110,7 @@ contract('end of ROSCA unit test', function(accounts) {
 
     it("validates endOfROSCARetrieve{Surplus, Fee} throw if called before clearing out the final round",
         co(function* () {
-      let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+      let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
       // we do not call yield rosca.startRound() here
@@ -124,8 +124,8 @@ contract('end of ROSCA unit test', function(accounts) {
         "expected calling endOfROSCARetrieveSurplus w/o calling startRound() to throw");
     }));
 
-	  it("throws if there are no more fees to be collected", co(function* () {
-				let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+    it("throws if there are no more fees to be collected", co(function* () {
+				let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
 						MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 				yield* runFullRoscaNoWithdraw(rosca);
 				yield rosca.startRound();  // cleans up the last round
@@ -142,7 +142,7 @@ contract('end of ROSCA unit test', function(accounts) {
 
     it("validates endOfROSCARetrieve{Surplus,Fee} throws if called not by the foreperson",
         co(function* () {
-      let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+      let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
       yield rosca.startRound();
@@ -160,7 +160,7 @@ contract('end of ROSCA unit test', function(accounts) {
     }));
 
     it("validates endOfROSCARetrieve{Surplus, Fee} throw if called too early", co(function* () {
-      let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+      let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
       yield* runFullRoscaNoWithdraw(rosca);
 

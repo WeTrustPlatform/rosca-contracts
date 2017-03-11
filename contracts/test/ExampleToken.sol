@@ -1,4 +1,6 @@
 // Based on https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/StandardToken.sol .
+//
+// An example ERC20 token, used for testing.
 pragma solidity ^0.4.8;
 
 import '../deps/ERC20TokenInterface.sol';
@@ -15,16 +17,21 @@ import './deps/SafeMath.sol';
 contract ExampleToken is ERC20TokenInterface, SafeMath {
 
   mapping(address => uint256) balances;
-  mapping (address => mapping (address => uint256)) allowed;
+  mapping(address => mapping (address => uint256)) allowed;
 
-  function transfer(address _to, uint256 _value) returns (bool success) {
+  // This is a method used only for tests.
+  function injectTokens(address to, uint256 howMuch) external {
+      balances[to] = balances[to] + howMuch;
+  }
+
+  function transfer(address _to, uint256 _value) external returns (bool success) {
     balances[msg.sender] = safeSub(balances[msg.sender], _value);
     balances[_to] = safeAdd(balances[_to], _value);
     Transfer(msg.sender, _to, _value);
     return true;
   }
 
-  function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
+  function transferFrom(address _from, address _to, uint256 _value) external returns (bool success) {
     uint256 _allowance = allowed[_from][msg.sender];
 
     // Check is not needed because safeSub(_allowance, _value) will already throw if this condition is not met
@@ -37,17 +44,17 @@ contract ExampleToken is ERC20TokenInterface, SafeMath {
     return true;
   }
 
-  function balanceOf(address _owner) constant returns (uint256 balance) {
+  function balanceOf(address _owner) constant external returns (uint256 balance) {
     return balances[_owner];
   }
 
-  function approve(address _spender, uint256 _value) returns (bool success) {
+  function approve(address _spender, uint256 _value) external returns (bool success) {
     allowed[msg.sender][_spender] = _value;
     Approval(msg.sender, _spender, _value);
     return true;
   }
 
-  function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
+  function allowance(address _owner, address _spender) constant external returns (uint256 remaining) {
     return allowed[_owner][_spender];
   }
 }

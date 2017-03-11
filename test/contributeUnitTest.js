@@ -15,7 +15,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
 
     it("Throws when calling contribute from a non-member", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
         // check if valid contribution can be made
         yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
@@ -31,6 +31,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         let blockTime = latestBlock.timestamp;
 
         let rosca = yield ROSCATest.new(
+            0  /* use ETH */,
             ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
             SERVICE_FEE_IN_THOUSANDTHS);
 
@@ -43,7 +44,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const ACTUAL_CONTRIBUTION = CONTRIBUTION_SIZE * 0.1;
@@ -65,7 +66,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("Checks whether the contributed value gets registered properly", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const CONTRIBUTION_CHECK = CONTRIBUTION_SIZE * 1.2;
@@ -83,7 +84,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     it("checks delinquent winner contribute the right amount to be no longer be considered a delinquent",
       co(function* () {
         let members = [accounts[1], accounts[2]];
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             members, SERVICE_FEE_IN_THOUSANDTHS);
         let DEFAULT_POT = MEMBER_LIST.length * CONTRIBUTION_SIZE;
         utils.increaseTime(START_TIME_DELAY);

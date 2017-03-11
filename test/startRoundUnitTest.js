@@ -18,7 +18,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
     it("watches for LogstartOfRound event", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         let eventFired = false;
@@ -37,7 +37,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     }));
 
     it("watches for LogEndOfROSCA event", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         let eventFired = false;
@@ -58,7 +58,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     }));
 
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function* () {
-        let rosca = yield utils.createROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         for (let i = 0; i < MEMBER_COUNT + 1; i++) {
