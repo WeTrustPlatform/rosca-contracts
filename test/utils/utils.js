@@ -1,11 +1,14 @@
 "use strict";
 
 let assert = require('chai').assert;
+let co = require("co").wrap;
 let consts = require("./consts.js");
 let Promise = require("bluebird");
 
 // we need this becaues test env is different than script env
 let myWeb3 = (typeof web3 === undefined ? undefined : web3);
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 module.exports = {
   setWeb3: function(web3) {
@@ -24,7 +27,7 @@ module.exports = {
     return promise.then(function() {
       assert.isNotOk(true, err);
     }).catch(function(e) {
-      assert.include(e.message, 'invalid JUMP', "Invalid Jump error didn't occur");
+      assert.include(e.message, 'invalid JUMP', "contract didn't throw as expected");
     });
   },
 
@@ -46,9 +49,43 @@ module.exports = {
                             START_TIME_DELAY, MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
   },
 
+  createERC20ROSCA: co(function* (ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+                                 MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS, accountsToInjectTo) {
+    let exampleToken = yield ExampleToken.new(accountsToInjectTo || []);
+    return this.createROSCA(exampleToken.address, ROUND_PERIOD_IN_DAYS,  // eslint-disable-line no-invalid-this
+                              CONTRIBUTION_SIZE, START_TIME_DELAY, MEMBER_LIST,
+                              SERVICE_FEE_IN_THOUSANDTHS);
+  }),
+
+  // Currency-agnostic
   contractNetCredit: function* (rosca) {
-    return web3.eth.getBalance(rosca.address) - (yield rosca.totalFees.call());
+    let tokenContract = yield rosca.tokenContract.call();
+    if (tokenContract == ZERO_ADDRESS) {
+      return web3.eth.getBalance(rosca.address).toNumber() - (yield rosca.totalFees.call()).toNumber();
+    }
+    return (yield ExampleToken.at(tokenContract).balanceOf(rosca.address)) - (yield rosca.totalFees.call()).toNumber();
   },
+
+  // Currency-agnostic
+  contribute: function(rosca, from, value) {
+    return rosca.tokenContract.call().then((tokenContract) => {
+      if (tokenContract !== ZERO_ADDRESS) {  // This is an ERC20 contract. Approve and contribute.
+        return ERC20TokenInterface.at(tokenContract).approve(rosca.address, value, {from: from}).then(() => {
+          return rosca.contribute({from: from, gas: 2e6});
+        });
+      }
+      // This is an ETH contract. Only need to call contribute.
+      return rosca.contribute({from: from, value: value});
+    });
+  },
+
+  getBalance: co(function* (account, tokenContract) {
+    if (!tokenContract || tokenContract === ZERO_ADDRESS) {
+      return web3.eth.getBalance(account).toNumber();
+    }
+    let balance = (yield ExampleToken.at(tokenContract).balanceOf(account)).toNumber();
+    return balance;
+  }),
 
   getGasUsage: function(transactionPromise, extraData) {
     return new Promise(function(resolve, reject) {

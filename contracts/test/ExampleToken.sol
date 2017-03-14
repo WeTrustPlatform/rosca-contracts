@@ -19,42 +19,53 @@ contract ExampleToken is ERC20TokenInterface, SafeMath {
   mapping(address => uint256) balances;
   mapping(address => mapping (address => uint256)) allowed;
 
+  function ExampleToken(address[] accounts) {
+    for (uint16 i = 0; i < accounts.length; ++i) {
+      balances[accounts[i]] = 100000000000000000000; // 1e20
+    }
+  }
   // This is a method used only for tests.
   function injectTokens(address to, uint256 howMuch) external {
       balances[to] = balances[to] + howMuch;
   }
 
-  function transfer(address _to, uint256 _value) external returns (bool success) {
-    balances[msg.sender] = safeSub(balances[msg.sender], _value);
-    balances[_to] = safeAdd(balances[_to], _value);
-    Transfer(msg.sender, _to, _value);
-    return true;
+  // See ERC20
+  function transfer(address _to, uint256 _value) external returns (bool) {
+    if (balances[msg.sender] >= _value && _value > 0) {
+      balances[msg.sender] -= _value;
+      balances[_to] += _value;
+      Transfer(msg.sender, _to, _value);
+      return true;
+    }
+    return false;
   }
 
-  function transferFrom(address _from, address _to, uint256 _value) external returns (bool success) {
-    uint256 _allowance = allowed[_from][msg.sender];
-
-    // Check is not needed because safeSub(_allowance, _value) will already throw if this condition is not met
-    // if (_value > _allowance) throw;
-
-    balances[_to] = safeAdd(balances[_to], _value);
-    balances[_from] = safeSub(balances[_from], _value);
-    allowed[_from][msg.sender] = safeSub(_allowance, _value);
-    Transfer(_from, _to, _value);
-    return true;
+  // See ERC20
+  function transferFrom(address _from, address _to, uint256 _value) external returns (bool) {
+    if (balances[_from] >= _value && allowed[_from][msg.sender] >= _value && _value > 0) {
+      balances[_to] += _value;
+      balances[_from] -= _value;
+      allowed[_from][msg.sender] -= _value;
+      Transfer(_from, _to, _value);
+      return true;
+    }
+    return false;
   }
 
-  function balanceOf(address _owner) constant external returns (uint256 balance) {
+  // See ERC20
+  function balanceOf(address _owner) constant external returns (uint256) {
     return balances[_owner];
   }
 
-  function approve(address _spender, uint256 _value) external returns (bool success) {
+  // See ERC20
+  function approve(address _spender, uint256 _value) external returns (bool) {
     allowed[msg.sender][_spender] = _value;
     Approval(msg.sender, _spender, _value);
     return true;
   }
 
-  function allowance(address _owner, address _spender) constant external returns (uint256 remaining) {
+  // See ERC20
+  function allowance(address _owner, address _spender) constant external returns (uint256) {
     return allowed[_owner][_spender];
   }
 }

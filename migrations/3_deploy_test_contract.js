@@ -6,5 +6,5 @@ module.exports = function(deployer) {
     simulatedTimeNow = latestBlock.timestamp; // timestamp of the latest block of in testrpc
     deployer.deploy(ROSCATest, 0 /* use ETH */, 3, 1e16 , simulatedTimeNow + (86400 + 10) ,
         [accounts[1],accounts[2],accounts[3]], 2);
-    deployer.deploy(ExampleToken);
+    deployer.deploy(ExampleToken, accounts);
 };

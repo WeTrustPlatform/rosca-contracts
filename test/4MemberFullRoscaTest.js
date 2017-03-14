@@ -96,19 +96,22 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
+    let relevantAccounts = accounts.slice(0, 4);
     ROSCATest.new(
-      0 /* ERC20 address */, ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MIN_START_DELAY,
-      accounts.slice(1, 4), SERVICE_FEE_IN_THOUSANDTHS).then(function(aRosca) {
+      0 /* use ETH */, ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MIN_START_DELAY,
+      relevantAccounts.slice(1) /* no foreperson */, SERVICE_FEE_IN_THOUSANDTHS).then((aRosca) => {
         ethRosca = {rosca: aRosca, tokenContract: 0};
-        ROSCATest.new(
-          ExampleToken.deployed().address, ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MIN_START_DELAY,
-          accounts.slice(1, 4), SERVICE_FEE_IN_THOUSANDTHS).then(function(bRosca) {
-            tokenRosca = {rosca: bRosca, tokenContract: ExampleToken.deployed()};
+        ExampleToken.new(relevantAccounts).then((exampleTokenContract) => {
+          ROSCATest.new(
+            exampleTokenContract.address, ROUND_PERIOD_IN_DAYS,
+            CONTRIBUTION_SIZE, blockTime + MIN_START_DELAY, relevantAccounts.slice(1),
+            SERVICE_FEE_IN_THOUSANDTHS).then(function(bRosca) {
+              tokenRosca = {rosca: bRosca, tokenContract: exampleTokenContract};
 
-            currentRosca = ethRosca;
-            done();
+              done();
+            });
           });
-      });
+        });
   });
 
   // In the different tests' comments:
@@ -405,8 +408,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     assert.isAbove(forepersonBalanceAfter, forepersonBalanceBefore);
   }
 
-  it("ETH Rosca", co(function* () {
-    currentRosca = ethRosca;
+  function* testCurrentRosca() {
     yield testPreRosca();
     yield test1stRound();
     yield test2ndRound();
@@ -414,22 +416,15 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     yield test4thRound();
     yield testPostRosca();
     yield postRoscaCollectionPeriod();
+  }
+
+  it("ETH Rosca", co(function* () {
+    currentRosca = ethRosca;
+    yield testCurrentRosca();
   }));
 
   it("Token ROSCA", co(function* () {
-    // Load up accounts with tokens.
-    yield tokenRosca.tokenContract.injectTokens(accounts[0], 1e22);
-    yield tokenRosca.tokenContract.injectTokens(accounts[1], 1e22);
-    yield tokenRosca.tokenContract.injectTokens(accounts[2], 1e22);
-    yield tokenRosca.tokenContract.injectTokens(accounts[3], 1e22);
-
     currentRosca = tokenRosca;
-    yield testPreRosca();
-    yield test1stRound();
-    yield test2ndRound();
-    yield test3rdRound();
-    yield test4thRound();
-    yield testPostRosca();
-    yield postRoscaCollectionPeriod();
+    yield testCurrentRosca();
   }));
 });

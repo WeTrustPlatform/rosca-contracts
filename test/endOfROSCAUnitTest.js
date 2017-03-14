@@ -16,6 +16,14 @@ contract('end of ROSCA unit test', function(accounts) {
     const MEMBER_COUNT = MEMBER_LIST.length + 1;  // foreperson
     const CONTRIBUTION_SIZE = 1e17;
 
+    let createETHandERC20Roscas = co(function* () {
+      let ethRosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+          MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+      let erc20Rosca = yield utils.createERC20ROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+          MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS, accounts);
+      return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
+    });
+
     // Runs the ROSCA, contributing funds as required, but never withdrawing - so that
     // the contract ends in a surplus.
     function* runFullRoscaNoWithdraw(rosca) {
@@ -29,7 +37,7 @@ contract('end of ROSCA unit test', function(accounts) {
         yield rosca.startRound({from: accounts[0]});
 
         for (let participant = 0; participant < MEMBER_COUNT; participant++) {
-          yield rosca.contribute({from: accounts[participant], value: CONTRIBUTION_SIZE});
+          yield utils.contribute(rosca, accounts[participant], CONTRIBUTION_SIZE);
         }
         yield rosca.bid(CONTRIBUTION_SIZE * MEMBER_COUNT, {from: accounts[round]});
         utils.increaseTime(ROUND_PERIOD);
@@ -38,46 +46,48 @@ contract('end of ROSCA unit test', function(accounts) {
 
     it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order + check event",
         co(function* () {
-      let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-          MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
-      yield* runFullRoscaNoWithdraw(rosca);
-      yield rosca.startRound();  // cleans up the last round
-      // foreperson must wait another round before being able to get the surplus
-      utils.increaseTime(ROUND_PERIOD);
+      let roscas = yield createETHandERC20Roscas();
+      for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
+        let tokenContract = yield rosca.tokenContract.call();
+        yield* runFullRoscaNoWithdraw(rosca);
+        yield rosca.startRound();  // cleans up the last round
+        // foreperson must wait another round before being able to get the surplus
+        utils.increaseTime(ROUND_PERIOD);
 
-      let contractCredit = yield utils.contractNetCredit(rosca);
-      assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
+        let contractCredit = yield utils.contractNetCredit(rosca);
+        assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
-      let eventFired = false;
-      let surplusWithdrawalEvent = rosca.LogForepersonSurplusWithdrawal();  // eslint-disable-line new-cap
-      surplusWithdrawalEvent.watch(function(error, log) {
-          surplusWithdrawalEvent.stopWatching();
-          eventFired = true;
-          assert.equal(log.args.amount, contractCredit,
-              "LogForepersonSurplusWithdrawal doesn't display proper amount value");
-      });
+        let eventFired = false;
+        let surplusWithdrawalEvent = rosca.LogForepersonSurplusWithdrawal();  // eslint-disable-line new-cap
+        surplusWithdrawalEvent.watch(function(error, log) {
+            surplusWithdrawalEvent.stopWatching();
+            eventFired = true;
+            assert.equal(log.args.amount, contractCredit,
+                "LogForepersonSurplusWithdrawal doesn't display proper amount value");
+        });
 
-      let forepersonBalanceBefore = web3.eth.getBalance(accounts[0]);
+        let forepersonBalanceBefore = yield utils.getBalance(accounts[0], tokenContract);
 
-      yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
+        yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
 
-      yield Promise.delay(300); // 300ms delay to allow the event to fire properly
-      assert.isOk(eventFired, "LogForepersonSurplusWithdrawal event did not fire");
+        yield Promise.delay(500); // 300ms delay to allow the event to fire properly
+        assert.isOk(eventFired, "LogForepersonSurplusWithdrawal event did not fire");
 
 
-      let forepersonBalanceAfter = web3.eth.getBalance(accounts[0]);
+        let forepersonBalanceAfter = yield utils.getBalance(accounts[0], tokenContract);
 
-      utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, contractCredit);
+        utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, contractCredit);
 
-      contractCredit = yield utils.contractNetCredit(rosca);
-      assert.equal(contractCredit, 0);
+        contractCredit = yield utils.contractNetCredit(rosca);
+        assert.equal(contractCredit, 0);
 
-      // Now retrieve fees
-      let totalFees = (yield rosca.totalFees.call()).toNumber();
-      forepersonBalanceBefore = web3.eth.getBalance(accounts[0]);
-      yield rosca.endOfROSCARetrieveFees({from: accounts[0]});
-      forepersonBalanceAfter = web3.eth.getBalance(accounts[0]);
-      utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, totalFees);
+        // Now retrieve fees
+        let totalFees = (yield rosca.totalFees.call()).toNumber();
+        forepersonBalanceBefore = yield utils.getBalance(accounts[0], tokenContract);
+        yield rosca.endOfROSCARetrieveFees({from: accounts[0]});
+        forepersonBalanceAfter = yield utils.getBalance(accounts[0], tokenContract);
+        utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, totalFees);
+      }
     }));
 
     it("checks if endOfROSCARetrieve{Fees, Surplus} retrieve the funds when called in this order", co(function* () {
@@ -89,21 +99,21 @@ contract('end of ROSCA unit test', function(accounts) {
       utils.increaseTime(ROUND_PERIOD);
 
       let totalFees = (yield rosca.totalFees.call()).toNumber();
-      let forepersonBalanceBefore = web3.eth.getBalance(accounts[0]);
+      let forepersonBalanceBefore = yield utils.getBalance(accounts[0]);
       yield rosca.endOfROSCARetrieveFees({from: accounts[0]});
-      let forepersonBalanceAfter = web3.eth.getBalance(accounts[0]);
+      let forepersonBalanceAfter = yield utils.getBalance(accounts[0]);
       utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, totalFees);
 
       // Note in this test we use the raw contract balance, as the fees were already collected.
-      let contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+      let contractCredit = yield utils.getBalance(rosca.address);
 
-      forepersonBalanceBefore = web3.eth.getBalance(accounts[0]);
+      forepersonBalanceBefore = yield utils.getBalance(accounts[0]);
       yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
-      forepersonBalanceAfter = web3.eth.getBalance(accounts[0]);
+      forepersonBalanceAfter = yield utils.getBalance(accounts[0]);
 
       utils.assertEqualUpToGasCosts(forepersonBalanceAfter - forepersonBalanceBefore, contractCredit);
 
-      contractCredit = web3.eth.getBalance(rosca.address).toNumber();
+      contractCredit = yield utils.getBalance(rosca.address);
       assert.equal(contractCredit, 0);
     }));
 
