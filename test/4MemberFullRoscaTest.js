@@ -1,5 +1,8 @@
 "use strict";
 
+// Runs an end to end, full ROSCA test of 4 players with 4 rounds.
+// Executes the test twice - once for ETH rosca, and another for token rosca.
+
 let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
@@ -7,30 +10,47 @@ let utils = require("./utils/utils.js");
 
 let expectedContractBalance;
 let p0ExpectedCredit;
-let rosca;
+let currentRosca;
+let ethRosca;
+let tokenRosca;
 let accounts;
 
 const WINNING_BID_PERCENT = [0.95, 0.90];
 
 // Shortcut functions
 function contribute(from, value) {
-  return rosca.contribute({from: accounts[from], value: value});
+  if (currentRosca.tokenContract == 0) {
+    // This is an ETH rosca
+    return currentRosca.rosca.contribute({from: accounts[from], value: value});
+  }
+  // If this is a token ROSCA, first approve and then contribute.
+  return Promise.all([
+    currentRosca.tokenContract.approve(currentRosca.rosca.address, value, {from: accounts[from]}),
+    currentRosca.rosca.contribute({from: accounts[from]}),
+  ]);
 }
 
 function startRound() {
-  return rosca.startRound();
+  return currentRosca.rosca.startRound();
 }
 
 function bid(from, bidInWei) {
-  return rosca.bid(bidInWei, {from: accounts[from]});
+  return currentRosca.rosca.bid(bidInWei, {from: accounts[from]});
 }
 
 function withdraw(from) {
-  return rosca.withdraw({from: accounts[from]});
+  return currentRosca.rosca.withdraw({from: accounts[from]});
 }
 
 function participantInfo(member) {
-  return rosca.members.call(accounts[member]);
+  return currentRosca.rosca.members.call(accounts[member]);
+}
+
+function getBalance(account) {
+  if (currentRosca.tokenContract === 0) {
+    return Promise.resolve(web3.eth.getBalance(account));
+  }
+  return currentRosca.tokenContract.balanceOf(account);
 }
 
 // Due to js roundoff errors, we allow values be up to a basis point off.
@@ -45,11 +65,11 @@ function* getContractStatus() {
           participantInfo(1),
           participantInfo(2),
           participantInfo(3),
-          rosca.totalDiscounts.call(),
-          rosca.currentRound.call(),
-          rosca.totalFees.call(),
+          currentRosca.rosca.totalDiscounts.call(),
+          currentRosca.rosca.currentRound.call(),
+          currentRosca.rosca.totalFees.call(),
       ]);
-  let balance = web3.eth.getBalance(rosca.address).toNumber();
+  let balance = (yield currentRosca.rosca.getBalance()).toNumber();
   return {
     credits: [
       results[0][0].toNumber(), results[1][0].toNumber(), results[2][0].toNumber(), results[3][0].toNumber()],
@@ -76,35 +96,45 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
+    let relevantAccounts = accounts.slice(0, 4);
     ROSCATest.new(
-      ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MIN_START_DELAY, accounts.slice(1, 4),
-      SERVICE_FEE_IN_THOUSANDTHS).then(function(aRosca) {
-        rosca = aRosca;
-       done();
-      });
+      0 /* use ETH */, ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + MIN_START_DELAY,
+      relevantAccounts.slice(1) /* no foreperson */, SERVICE_FEE_IN_THOUSANDTHS).then((aRosca) => {
+        ethRosca = {rosca: aRosca, tokenContract: 0};
+        ExampleToken.new(relevantAccounts).then((exampleTokenContract) => {
+          ROSCATest.new(
+            exampleTokenContract.address, ROUND_PERIOD_IN_DAYS,
+            CONTRIBUTION_SIZE, blockTime + MIN_START_DELAY, relevantAccounts.slice(1),
+            SERVICE_FEE_IN_THOUSANDTHS).then(function(bRosca) {
+              tokenRosca = {rosca: bRosca, tokenContract: exampleTokenContract};
+
+              done();
+            });
+          });
+        });
   });
-
-  it("pre-ROSCA: checks rosca status is valid", co(function* () {
-      let contract = yield getContractStatus();
-
-      for (let i = 0; i < MEMBER_COUNT; ++i) {
-        assert.equal(contract.credits[i], 0); // credit of each participant
-      }
-      assert.equal(contract.totalDiscounts, 0); // totalDiscount value
-      assert.equal(contract.currentRound, 0); // currentRound value
-      assert.equal(contract.balance, 0);
-  }));
 
   // In the different tests' comments:
   // C is the CONTRIBUTION_SIZE
   // P is the DEFAULT_POT
   // MC is MEMBER_COUNT == 4
   // NR is NET_REWARDS
-  it("1st round: p2 wins 0.95 of the pot", co(function* () {
-    yield Promise.all([
-        contribute(0, CONTRIBUTION_SIZE * 10),  // p0's credit == 10C
-        contribute(2, CONTRIBUTION_SIZE),  // p2's credit == C
-    ]);
+
+  function* testPreRosca() {
+    let contract = yield getContractStatus();
+
+    for (let i = 0; i < MEMBER_COUNT; ++i) {
+      assert.equal(contract.credits[i], 0); // credit of each participant
+    }
+    assert.equal(contract.totalDiscounts, 0); // totalDiscount value
+    assert.equal(contract.currentRound, 0); // currentRound value
+    assert.equal(contract.balance, 0);
+  }
+
+  function* test1stRound() {
+    // 1st round: p2 wins 0.95 of the pot
+    yield contribute(0, CONTRIBUTION_SIZE * 10); // p0's credit == 10C
+    yield contribute(2, CONTRIBUTION_SIZE);  // p2's credit == C
     utils.increaseTime(ROUND_PERIOD);
 
     yield Promise.all([
@@ -148,10 +178,11 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
         / 1000 * SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 2); // currentRound value
-    assert.isNotOk(yield rosca.endOfROSCA.call());
-  }));
+    assert.isNotOk(yield currentRosca.rosca.endOfROSCA.call());
+  }
 
-  it("2nd round: p2, who has won previous round, and p3, who has not won yet, do not contribute", co(function* () {
+  function* test2ndRound() {
+    // 2nd round: p2, who has won previous round, and p3, who has not won yet, do not contribute
     let contractBefore = yield getContractStatus();
 
     // the amount withdrawn by p2 should be
@@ -168,11 +199,11 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
     assert.equal(contractBefore.balance - contract.balance, expectedWithdrawalBalance);
 
-    yield contribute(1, CONTRIBUTION_SIZE * 0.8); // p1's credit is now 2C
+    contribute(1, CONTRIBUTION_SIZE * 0.8); // p1's credit is now 2C
     yield bid(1, DEFAULT_POT); // lowestBid = Pot, winner = 1
     // Foreperson only pays the extra money required, taking into account discount from previous round.
     // Foreperson's credit is = C (from before) + C - totalDiscount
-    yield contribute(0, CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO);
+    contribute(0, CONTRIBUTION_SIZE - DEFAULT_POT * 0.05 / MEMBER_COUNT * NET_REWARDS_RATIO);
     yield bid(0, DEFAULT_POT * 0.95); // lowestBid = Pot * 0.95, winnerAddress = foreman
     yield bid(1, DEFAULT_POT * WINNING_BID_PERCENT[1]); // lowestBid = Pot * 0.90, winner = 1
     yield utils.assertThrows(bid(2, DEFAULT_POT * 0.75));  // 2 already won
@@ -212,10 +243,11 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
         SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 3);
-    assert.isNotOk(yield rosca.endOfROSCA.call());
-  }));
+    assert.isNotOk(yield currentRosca.rosca.endOfROSCA.call());
+  }
 
-  it("3rd round: everyone but 2 contributes, nobody puts a bid", co(function* () {
+  function* test3rdRound() {
+    // 3rd round: everyone but 2 contributes, nobody puts a bid"
     let contractBefore = yield getContractStatus();
     yield withdraw(1);
     let contract = yield getContractStatus();
@@ -267,12 +299,12 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
         SERVICE_FEE_IN_THOUSANDTHS);
 
     assert.equal(contract.currentRound, 4); // currentRound value
-    assert.isNotOk(yield rosca.endOfROSCA.call());
-  }));
+    assert.isNotOk(yield currentRosca.rosca.endOfROSCA.call());
+  }
 
-  it("4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good standing," +
-      " p0 tries to withraw more than contract's balance",
-      co(function* () {
+  function* test4thRound() {
+    // 4th round (last): nodoby bids and p3, the only non-winner, can't win as he's not in good
+    // standing, p0 tries to withraw more than contract's balance
     let contractBefore = yield getContractStatus();
     yield withdraw(0);
 
@@ -330,10 +362,10 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
 
     assert.equal(contract.currentRound, 4); // currentRound value
     // End of Rosca has been reached
-    assert.isOk(yield rosca.endOfROSCA.call());
-  }));
+    assert.isOk(yield currentRosca.rosca.endOfROSCA.call());
+  }
 
-  it("post-ROSCA", co(function* () {
+  function* testPostRosca() {
     let contractBefore = yield getContractStatus();
     yield withdraw(0);  // p0's credit from last round
 
@@ -352,27 +384,47 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     contract = yield getContractStatus();
     expectedContractBalance = expectedContractBalance - 3 * CONTRIBUTION_SIZE - contractBefore.totalDiscounts;
     assertWeiCloseTo(contract.balance, expectedContractBalance);
-  }));
+  }
 
-  it("post-ROSCA collection period", co(function* () {
+  function* postRoscaCollectionPeriod() {
     utils.increaseTime(ROUND_PERIOD);
     // Only the foreperson can collect the surplus funds.
-    yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
-    let p0balanceBefore = web3.eth.getBalance(accounts[0]);
-    yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
-    let p0balanceAfter = web3.eth.getBalance(accounts[0]);
+    yield utils.assertThrows(currentRosca.rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
+    let p0balanceBefore = yield getBalance(accounts[0]);
+    yield currentRosca.rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
+    let p0balanceAfter = yield getBalance(accounts[0]);
     // Accounting for gas, we can't expect the entire funds to be transferred to p0.
     assert.isAbove(p0balanceAfter - p0balanceBefore,
         2.0 * CONTRIBUTION_SIZE / 1000 * NET_REWARDS_RATIO);
 
     // Only the foreperson can collect the fees.
-    yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
+    yield utils.assertThrows(currentRosca.rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
 
-    let forepersonBalanceBefore = web3.eth.getBalance(accounts[0]).toNumber();
-    yield rosca.endOfROSCARetrieveFees({from: accounts[0]});
-    let forepersonBalanceAfter = web3.eth.getBalance(accounts[0]).toNumber();
+    let forepersonBalanceBefore = (yield getBalance(accounts[0])).toNumber();
+    yield currentRosca.rosca.endOfROSCARetrieveFees({from: accounts[0]});
+    let forepersonBalanceAfter = (yield getBalance(accounts[0])).toNumber();
     // Accounting for gas, we can't expect the entire funds to be transferred to p0.
     // TODO(ronme): more precise calculations after we move to the contribs/winnings model.
     assert.isAbove(forepersonBalanceAfter, forepersonBalanceBefore);
+  }
+
+  function* testCurrentRosca() {
+    yield testPreRosca();
+    yield test1stRound();
+    yield test2ndRound();
+    yield test3rdRound();
+    yield test4thRound();
+    yield testPostRosca();
+    yield postRoscaCollectionPeriod();
+  }
+
+  it("ETH Rosca", co(function* () {
+    currentRosca = ethRosca;
+    yield testCurrentRosca();
+  }));
+
+  it("Token ROSCA", co(function* () {
+    currentRosca = tokenRosca;
+    yield testCurrentRosca();
   }));
 });

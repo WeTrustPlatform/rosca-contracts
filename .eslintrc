@@ -18,6 +18,8 @@
       "before": false,
       "beforeEach": false,
       "contract": false,
+      "ERC20TokenInterface": false,
+      "ExampleToken": false,
       "it": false,
       "module": false,
       "require": false,
