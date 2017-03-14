@@ -2,9 +2,6 @@ pragma solidity ^0.4.7;
 
 import "./deps/ERC20TokenInterface.sol";
 
-// FOR NOW USE ROSCAv1 AS THIS IS NOT YET TESTED ENOUGH
-// TESTS REMAINING: WITHDRAW, END-OF-ROSCA AND EMERGENCY withdrawal
-
 /**
  * @title ROSCA on a blockchain.
  *
