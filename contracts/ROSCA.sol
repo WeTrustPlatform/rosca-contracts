@@ -528,9 +528,6 @@ contract ROSCA {
    * does the bookeeping of that round.
    */
   function endOfROSCARetrieveFees() onlyFromForeperson onlyIfRoscaEnded external {
-    if (totalFees == 0) {
-      throw;
-    }
     uint256 tempTotalFees = totalFees;  // prevent re-entry.
     totalFees = 0;
     if (!sendFundsToMsgSender(tempTotalFees)) {   // if the send() fails, restore totalFees
