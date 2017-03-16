@@ -134,22 +134,6 @@ contract('end of ROSCA unit test', function(accounts) {
         "expected calling endOfROSCARetrieveSurplus w/o calling startRound() to throw");
     }));
 
-    it("throws if there are no more fees to be collected", co(function* () {
-				let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-						MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
-				yield* runFullRoscaNoWithdraw(rosca);
-				yield rosca.startRound();  // cleans up the last round
-				// foreperson must wait another round before being able to get the surplus
-				utils.increaseTime(ROUND_PERIOD);
-
-				let contractCredit = yield utils.contractNetCredit(rosca);
-				assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
-
-				yield rosca.endOfROSCARetrieveFees({from: accounts[0]}); // totalFees should be set to zero.
-
-				utils.assertThrows(rosca.endOfROSCARetrieveFees({from: accounts[0]}));
-		}));
-
     it("validates endOfROSCARetrieve{Surplus,Fee} throws if called not by the foreperson",
         co(function* () {
       let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
