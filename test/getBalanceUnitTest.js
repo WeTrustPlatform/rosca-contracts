@@ -7,20 +7,18 @@ let utils = require("./utils/utils.js");
 
 contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_DAYS_BEFORE_START = 1;
+    const ROUND_PERIOD_IN_SECS = 100;
     const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
-    const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
+    const START_TIME_DELAY = 10; // 10 seconds buffer
     const NET_REWARDS_RATIO = ((1000 - SERVICE_FEE_IN_THOUSANDTHS) / 1000);
 
     it("checks getParticipantBalance returns correct withdrawable value", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         yield Promise.all([
@@ -34,7 +32,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         yield rosca.startRound();
         yield rosca.bid(DEFAULT_POT * 0.98, {from: accounts[2]});
 
-        utils.increaseTime(ROUND_PERIOD_DELAY);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
         let balance = yield rosca.getParticipantBalance.call(accounts[2]);
         let totalDiscounts = (yield rosca.totalDiscounts.call()).toNumber();
@@ -54,7 +52,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
 
     it("checks that getParticipantBalance returns negative value for delinquents " +
        "(who haven't won the pot)", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
@@ -86,7 +84,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         // 3 member rosca, p1 contribute 5 * CONTRIBUTION_SIZE and win round 1
         let memberList = [accounts[1], accounts[2]];
         let pot = (memberList.length + 1) * CONTRIBUTION_SIZE;
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             memberList, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
@@ -97,7 +95,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
             rosca.contribute({from: accounts[2], value: 0.5 * CONTRIBUTION_SIZE}),
         ]);
 
-        utils.increaseTime(ROUND_PERIOD_DELAY);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         let winnerAddress = 0;
@@ -110,7 +108,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
             winnerAddress = log.args.winnerAddress;
         });
 
-        utils.increaseTime(ROUND_PERIOD_DELAY);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
         // we expect one of the delinquent to win
 

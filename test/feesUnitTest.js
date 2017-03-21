@@ -27,8 +27,7 @@ function withdraw(from) {
 
 contract('fees unit test', function(accounts_) {
   const START_TIME_DELAY = 86400 + 10;
-  const ROUND_PERIOD_IN_DAYS = 3;
-  const ROUND_PERIOD = ROUND_PERIOD_IN_DAYS * 86400;
+  const ROUND_PERIOD_IN_SECS = 100;
   const SERVICE_FEE_IN_THOUSANDTHS = 10;
   // Note accounts[0] is the foreperson, deploying the contract.
   const CONTRIBUTION_SIZE = 1e17;
@@ -39,7 +38,7 @@ contract('fees unit test', function(accounts_) {
 
   function* getFeesInContractAfterLastRound(rosca) {
     // Wait another round.
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
 
     yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]}); // Let foreperson retrieve their own fees.
 
@@ -59,7 +58,7 @@ contract('fees unit test', function(accounts_) {
     let blockTime = latestBlock.timestamp;
     ROSCATest.new(
      0  /* use ETH */,
-     ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, accounts.slice(1, 2),
+     ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, accounts.slice(1, 2),
       SERVICE_FEE_IN_THOUSANDTHS)
       .then(function(aRosca) {
         rosca = aRosca;
@@ -77,14 +76,14 @@ contract('fees unit test', function(accounts_) {
       bid(0, 0.9 * POT_SIZE),
     ]);
 
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield Promise.all([
       startRound(),
       contribute(0, CONTRIBUTION_SIZE),
       contribute(1, CONTRIBUTION_SIZE),
     ]);
     // Finish the ROSCA
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield rosca.startRound();
 
     let contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
@@ -118,13 +117,13 @@ contract('fees unit test', function(accounts_) {
       bid(0, 0.9 * POT_SIZE),
     ]);
 
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield Promise.all([
       startRound(),
       contribute(1, CONTRIBUTION_SIZE),
     ]);
     // Finish the ROSCA
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield rosca.startRound();
 
     let contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
@@ -158,7 +157,7 @@ contract('fees unit test', function(accounts_) {
       bid(0, 0.9 * POT_SIZE),
     ]);
 
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield Promise.all([
       startRound(),
       contribute(0, 1 * CONTRIBUTION_SIZE),
@@ -166,7 +165,7 @@ contract('fees unit test', function(accounts_) {
     ]);
 
     // Finish the ROSCA
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield rosca.startRound();
 
     let contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
@@ -203,7 +202,7 @@ contract('fees unit test', function(accounts_) {
       bid(0, 0.9 * POT_SIZE),
     ]);
 
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield Promise.all([
       startRound(),
       contribute(0, 1 * CONTRIBUTION_SIZE),
@@ -211,7 +210,7 @@ contract('fees unit test', function(accounts_) {
     ]);
 
     // Finish the ROSCA
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield startRound();
 
     contractBalanceBefore = web3.eth.getBalance(rosca.address).toNumber();
@@ -237,7 +236,7 @@ contract('fees unit test', function(accounts_) {
       bid(1, 0.9 * POT_SIZE),
     ]);
 
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield Promise.all([
       startRound(),
       contribute(0, 1 * CONTRIBUTION_SIZE),
@@ -245,7 +244,7 @@ contract('fees unit test', function(accounts_) {
     ]);
 
     // Finish the ROSCA
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield rosca.startRound();
 
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
@@ -263,13 +262,13 @@ contract('fees unit test', function(accounts_) {
       contribute(0, CONTRIBUTION_SIZE),
     ]);
 
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield Promise.all([
       startRound(),
     ]);
 
     // Finish the ROSCA
-    utils.increaseTime(ROUND_PERIOD);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
     yield rosca.startRound();
     let fees = (yield* getFeesInContractAfterLastRound(rosca)).toNumber();
     assert.equal(fees, expectedFeesFrom(CONTRIBUTION_SIZE * 2));  // 2 rounds, only one in goodStanding

@@ -6,15 +6,14 @@ let utils = require("./utils/utils.js");
 
 contract('ROSCA addMember Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_DAYS_BEFORE_START = 1;
+    const ROUND_PERIOD_IN_SECS = 100;
     const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
-    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
+    const START_TIME_DELAY = 10; // 10 seconds buffer
 
     it("throws when adding an existing member", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         yield utils.assertThrows(rosca.addMember(accounts[1]),
@@ -22,7 +21,7 @@ contract('ROSCA addMember Unit Test', function(accounts) {
     }));
 
     it("checks member get added properly", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         // try contributing from a non-member to make sure membership hasn't been established

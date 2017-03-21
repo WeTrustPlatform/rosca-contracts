@@ -7,18 +7,16 @@ let utils = require("./utils/utils.js");
 
 contract('ROSCA startRound Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_DAYS_BEFORE_START = 1;
+    const ROUND_PERIOD_IN_SECS = 100;
     const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
-    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
-    const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
+    const START_TIME_DELAY = 10; // 10 seconds buffer
 
     it("watches for LogstartOfRound event", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         let eventFired = false;
@@ -37,7 +35,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     }));
 
     it("watches for LogEndOfROSCA event", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         let eventFired = false;
@@ -48,7 +46,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         });
 
         for (let i = 0; i < MEMBER_COUNT + 1; i++) { // +1, to startRound
-            utils.increaseTime(ROUND_PERIOD_DELAY);
+            utils.increaseTime(ROUND_PERIOD_IN_SECS);
             yield rosca.startRound();
             assert.isNotOk(eventFired);
         }
@@ -58,7 +56,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
     }));
 
     it("Throws when calling startRound before roundStartTime (including round = 0)", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         for (let i = 0; i < MEMBER_COUNT + 1; i++) {
@@ -66,7 +64,7 @@ contract('ROSCA startRound Unit Test', function(accounts) {
 
             yield rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE});
 
-            utils.increaseTime(ROUND_PERIOD_DELAY);
+            utils.increaseTime(ROUND_PERIOD_IN_SECS);
             yield rosca.startRound();
         }
         assert.isOk(yield rosca.endOfROSCA.call());  // Unfortunately, we need to check the internal var directly.

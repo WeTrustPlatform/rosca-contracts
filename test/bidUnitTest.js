@@ -7,19 +7,17 @@ let utils = require("./utils/utils.js");
 
 contract('ROSCA bid Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_DAYS_BEFORE_START = 1;
+    const ROUND_PERIOD_IN_SECS = 100;
     const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
-    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
+    const START_TIME_DELAY = 10; // 10 seconds buffer
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
     it("Throws when calling bid with valid parameters before ROSCA starts", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         yield utils.assertThrows(rosca.bid(DEFAULT_POT, {from: accounts[1]}),
@@ -27,7 +25,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("Throws when calling bid without being in good Standing", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
@@ -38,7 +36,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("Throws Placing bid less than 65% of the Pot", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const MIN_DISTRIBUTION_PERCENT = yield rosca.MIN_DISTRIBUTION_PERCENT.call();
@@ -54,7 +52,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("generates a LogNewLowestBid event when placing a valid new bid", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const BID_TO_PLACE = DEFAULT_POT * 0.94;
@@ -79,7 +77,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         yield Promise.delay(300);
         assert.isOk(eventFired, "Bid event did not fire");
 
-        utils.increaseTime(ROUND_PERIOD_DELAY);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         let credit = (yield rosca.members.call(accounts[2]))[0];
@@ -89,7 +87,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("Throws when placing a valid bid from paid member", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
@@ -99,7 +97,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
             rosca.bid(DEFAULT_POT, {from: accounts[2]}),
         ]);
 
-        utils.increaseTime(ROUND_PERIOD_DELAY);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         yield utils.assertThrows(rosca.bid(DEFAULT_POT, {from: accounts[2]}),
@@ -107,7 +105,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("ignores bid higher than MAX_NEXT_BID_RATIO of the previous lowest bid", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const MAX_NEXT_BID_RATIO = yield (ROSCATest.deployed()).MAX_NEXT_BID_RATIO.call();
@@ -123,7 +121,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
             rosca.bid(NOT_LOW_ENOUGH_BID_TO_PLACE, {from: accounts[3]}),
         ]);
 
-        utils.increaseTime(ROUND_PERIOD_DELAY);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         let p1Credit = (yield rosca.members.call(accounts[1]))[0];
@@ -134,7 +132,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("ignores higher bid", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const LOWER_BID = DEFAULT_POT * 0.95;
@@ -148,7 +146,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
             rosca.bid(LOWER_BID, {from: accounts[3]}),
             rosca.bid(DEFAULT_POT, {from: accounts[1]}),
         ]);
-        utils.increaseTime(ROUND_PERIOD_DELAY);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         let p3Credit = (yield rosca.members.call(accounts[3]))[0];

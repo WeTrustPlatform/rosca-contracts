@@ -5,14 +5,14 @@ let utils = require("../../test/utils/utils.js");
 /**
  * Runs a full ROSCA with a given number of participants (up to 10) and prints out
  * each transaction's gas usage, and also the maximum transaction gas usage.
- * 
+ *
  * usage: truffle exec path/to/gas_usage.js <number of rosca participants>
  */
 let accounts = web3.eth.accounts;
 const ROSCA_START_TIME_DELAY = 86400 + 10;
 const CONTRIBUTION_SIZE = 1e16;
 let memberList;
-const ROUND_PERIOD_IN_DAYS = 3;
+const ROUND_PERIOD_IN_SECS = 100;
 
 let maxGas = 0;
 let maxMethod;
@@ -20,31 +20,32 @@ let maxMethod;
 
 function createROSCA() {
   const SERVICE_FEE_IN_THOUSANDTHS = 2;
-  
+
   let latestBlock = web3.eth.getBlock("latest");
   let blockTime = latestBlock.timestamp;
   return ROSCA.new(
-      ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + ROSCA_START_TIME_DELAY, memberList, 
+      0 /* use ETH */,
+      ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + ROSCA_START_TIME_DELAY, memberList,
       SERVICE_FEE_IN_THOUSANDTHS);
 }
 
 function* runRosca(rosca, numParticipants) {
   // Get to the start of the ROSCA.
   utils.increaseTime(ROSCA_START_TIME_DELAY + 10);
-  
+
   for (let round = 1; round <= numParticipants; round++) {
     yield utils.getGasUsage(rosca.startRound({from: accounts[0]}), "startRound");
-    
+
     if (round > 1) {
       yield utils.getGasUsage(rosca.withdraw({from: accounts[round - 2]}), "withdraw");
     }
-    
+
     for (let participant = 0; participant < numParticipants; participant++) {
       yield utils.getGasUsage(rosca.contribute({from: accounts[participant], value: CONTRIBUTION_SIZE}), "contribute");
     }
-    
+
     yield utils.getGasUsage(rosca.bid(CONTRIBUTION_SIZE * (memberList.length + 1), {from: accounts[round - 1]}), "bid");
-    utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
   }
 }
 
@@ -70,7 +71,7 @@ function registerTransaction(gasUsed, method) {
 }
 
 function serializeYieldsAndGetMaxGas(gen, cb) {
-  
+
   // Serialize the yields using recursion (ugh).
   function nextYield() {
     let iter = gen.next();
@@ -83,7 +84,7 @@ function serializeYieldsAndGetMaxGas(gen, cb) {
       nextYield();
     });
   }
-  
+
   // Call the first nextYield().
   nextYield();
 }
@@ -91,9 +92,9 @@ function serializeYieldsAndGetMaxGas(gen, cb) {
 module.exports = function() {
 
   let numParticipants = getNumParticipants();
-  
+
   utils.setWeb3(web3);
-  
+
   // First mine one block to reset testrpc of any leftovers.
   utils.mineOneBlock();
 

@@ -7,18 +7,17 @@ let utils = require("./utils/utils.js");
 
 contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_DAYS_BEFORE_START= 1;
+    const ROUND_PERIOD_IN_SECS = 100;
     const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
 
     const MEMBER_COUNT = MEMBER_LIST.length + 1;
     const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START+ 10; // 10 seconds buffer
+    const START_TIME_DELAY = 10; // 10 seconds buffer
 
     it("checks if totalDiscount grows when lowestBid < DEFAULT_POT", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const BID_TO_PLACE = DEFAULT_POT * 0.75;
@@ -38,7 +37,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         const BID_TO_PLACE = DEFAULT_POT * 0.68;
@@ -70,7 +69,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function* () {
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
         utils.increaseTime(START_TIME_DELAY);
@@ -110,7 +109,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         // 3 member rosca, where p1 is the only one in goodStanding and will win the Pot in round 1
         // in 2nd round check that one of the other two users (delinquents) get the pot
         let memberList = [accounts[1], accounts[2]];
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             memberList, SERVICE_FEE_IN_THOUSANDTHS);
 
         let pot = (memberList.length + 1) * CONTRIBUTION_SIZE;
@@ -118,7 +117,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield rosca.startRound();
         yield rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE});
 
-        utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         // check if p1 is the winner
