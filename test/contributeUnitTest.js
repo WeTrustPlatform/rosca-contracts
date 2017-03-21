@@ -10,17 +10,16 @@ let utils = require("./utils/utils.js");
 
 contract('ROSCA contribute Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_DAYS = 3;
-    const MIN_DAYS_BEFORE_START = 1;
+    const ROUND_PERIOD_IN_SECS = 100;
     const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
     const CONTRIBUTION_SIZE = 1e16;
     const SERVICE_FEE_IN_THOUSANDTHS = 2;
-    const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
+    const START_TIME_DELAY = 10; // 10 seconds buffer
 
     let createETHandERC20Roscas = co(function* () {
-      let ethRosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+      let ethRosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
-      let erc20Rosca = yield utils.createERC20ROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+      let erc20Rosca = yield utils.createERC20ROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS, accounts);
       return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
     });
@@ -45,11 +44,11 @@ contract('ROSCA contribute Unit Test', function(accounts) {
 
         let rosca = yield ROSCATest.new(
             0  /* use ETH */,
-            ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
+            ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
             SERVICE_FEE_IN_THOUSANDTHS);
 
         for (let i = 0; i < MEMBER_LIST.length + 2; i++) {
-            utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+            utils.increaseTime(ROUND_PERIOD_IN_SECS);
             yield rosca.startRound();
         }
 
@@ -95,7 +94,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     it("checks delinquent winner who contributes the right amount no longer considered delinquent",
       co(function* () {
         let members = [accounts[1], accounts[2]];
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, START_TIME_DELAY,
+        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             members, SERVICE_FEE_IN_THOUSANDTHS);
         let DEFAULT_POT = MEMBER_LIST.length * CONTRIBUTION_SIZE;
         utils.increaseTime(START_TIME_DELAY);
@@ -107,7 +106,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             rosca.bid(DEFAULT_POT * 0.8, {from: accounts[2]}),
         ]);
 
-        utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         let winnerAddress = 0;
@@ -120,7 +119,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             winnerAddress = log.args.winnerAddress;
         });
 
-        utils.increaseTime(ROUND_PERIOD_IN_DAYS * 86400);
+        utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
         yield Promise.delay(300);

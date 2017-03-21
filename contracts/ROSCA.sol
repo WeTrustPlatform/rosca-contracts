@@ -29,8 +29,6 @@ contract ROSCA {
   // already in round number X > 1 and participants are supposedly delinquent.
   uint32 constant internal MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS = 900;  // 15 minutes
 
-  uint8 constant internal MIN_ROUND_PERIOD_IN_DAYS = 1;
-  uint8 constant internal MAX_ROUND_PERIOD_IN_DAYS = 30;
   // the winning bid must be at least this much of the maximum (aka default) pot value
   uint8 constant internal MIN_DISTRIBUTION_PERCENT = 65;
 
@@ -70,7 +68,7 @@ contract ROSCA {
   ////////////////////
 
   // ROSCA parameters
-  uint16 internal roundPeriodInDays;
+  uint256 internal roundPeriodInSecs;
   uint16 internal serviceFeeInThousandths;
   uint16 internal currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
   address internal foreperson;
@@ -180,15 +178,15 @@ contract ROSCA {
     */
   function ROSCA(
       ERC20TokenInterface erc20tokenContract,  // pass 0 to use ETH
-      uint16 roundPeriodInDays_,
+      uint256 roundPeriodInSecs_,
       uint128 contributionSize_,
       uint256 startTime_,
       address[] members_,
       uint16 serviceFeeInThousandths_) {
-    if (roundPeriodInDays_ < MIN_ROUND_PERIOD_IN_DAYS || roundPeriodInDays_ > MAX_ROUND_PERIOD_IN_DAYS) {
+    if (roundPeriodInSecs_ == 0) {
       throw;
     }
-    roundPeriodInDays = roundPeriodInDays_;
+    roundPeriodInSecs = roundPeriodInSecs_;
 
     contributionSize = contributionSize_;
 
@@ -224,7 +222,7 @@ contract ROSCA {
     * Priority is given to non-delinquent participants.
     */
   function startRound() onlyIfRoscaNotEnded external {
-    uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInDays * 1 days);
+    uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInSecs);
     if (now < roundStartTime ) {  // too early to start a new round.
       throw;
     }
@@ -496,7 +494,7 @@ contract ROSCA {
   }
 
   /**
-   * @dev Allows the foreperson to retrieve any surplus funds, one roundPeriodInDays after
+   * @dev Allows the foreperson to retrieve any surplus funds, one roundPeriodInSecs after
    * the end of the ROSCA. Note this does not retrieve the foreperson's fees, which should
    * be retireved by calling endOfROSCARetrieveFees.
    *
@@ -504,7 +502,7 @@ contract ROSCA {
    * does the bookeeping of that round.
    */
   function endOfROSCARetrieveSurplus() onlyFromForeperson onlyIfRoscaEnded external {
-    uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInDays * 1 days);
+    uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInSecs);
     if (now < roscaCollectionTime || forepersonSurplusCollected) {
         throw;
     }

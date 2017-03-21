@@ -7,16 +7,14 @@ let utils = require("../utils/utils.js");
 
 contract('ROSCA reentry attack test', function(accounts) {
   // Parameters for new ROSCA creation
-  const ROUND_PERIOD_IN_DAYS = 3;
-  const MIN_DAYS_BEFORE_START = 1;
+  const ROUND_PERIOD_IN_SECS = 100;
   const MEMBER_LIST = accounts.slice(2);
   const CONTRIBUTION_SIZE = 1e16;
   const SERVICE_FEE_IN_THOUSANDTHS = 0;
-  const START_TIME_DELAY = 86400 * MIN_DAYS_BEFORE_START + 10; // 10 seconds buffer
+  const START_TIME_DELAY = 10; // 10 seconds buffer
 
   const MEMBER_COUNT = MEMBER_LIST.length + 1;
   const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
-  const ROUND_PERIOD_DELAY = 86400 * ROUND_PERIOD_IN_DAYS;
 
   it("prevents re-entry attacks in withdraw", co(function* () {
     // Create an attack contract that tries to call re-enter withdraw() when funds
@@ -28,7 +26,7 @@ contract('ROSCA reentry attack test', function(accounts) {
     let blockTime = latestBlock.timestamp;
     let rosca = yield ROSCATest.new(
         0  /* use ETH */,
-        ROUND_PERIOD_IN_DAYS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, [attackContract.address],
+        ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, [attackContract.address],
         SERVICE_FEE_IN_THOUSANDTHS, {from: accounts[0]});
 
     utils.increaseTime(START_TIME_DELAY);
@@ -42,7 +40,7 @@ contract('ROSCA reentry attack test', function(accounts) {
     yield attackContract.bid(0.9 * DEFAULT_POT, {from: accounts[0], gas: 4e6});
 
     yield rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE * 5, gas: 4e6});
-    utils.increaseTime(ROUND_PERIOD_DELAY);
+    utils.increaseTime(ROUND_PERIOD_IN_SECS);
 
     yield attackContract.startRound();
     // Second round: attacker contract's credit should be 2.5C + 0.9C + 0.05C (discount) == 3.45C.
