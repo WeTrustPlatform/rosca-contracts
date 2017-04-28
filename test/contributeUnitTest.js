@@ -7,6 +7,8 @@ let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
+let ROSCATest = artifacts.require('ROSCATest.sol');
+
 
 contract('ROSCA contribute Unit Test', function(accounts) {
     // Parameters for new ROSCA creation

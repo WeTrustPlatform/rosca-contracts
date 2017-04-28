@@ -3,6 +3,7 @@
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
+let ROSCATest = artifacts.require('ROSCATest.sol');
 
 contract('Escape Hatch unit test', function(accounts) {
   const START_TIME_DELAY = 86400 + 10;
@@ -41,7 +42,7 @@ contract('Escape Hatch unit test', function(accounts) {
   it("checks that only Invoker can enable the escape hatch", co(function* () {
     // For some reason can't make the beforeXXX() functions to work, so doing it the ugly
     // way of setting this var in the first test.
-    ESCAPE_HATCH_ENABLER = yield ROSCATest.deployed().ESCAPE_HATCH_ENABLER.call();
+    ESCAPE_HATCH_ENABLER = yield (yield ROSCATest.deployed()).ESCAPE_HATCH_ENABLER.call();
 
     let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
         MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);

@@ -3,6 +3,7 @@
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
+let ROSCATest = artifacts.require('ROSCATest.sol');
 
 contract('ROSCA constructor Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
@@ -30,7 +31,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         let MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS =
             (yield deployed.MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS.call()).toNumber();
 
@@ -46,7 +47,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
-        let deployed = ROSCATest.deployed();
+        let deployed = yield ROSCATest.deployed();
         let MAX_FEE = yield deployed.MAX_FEE_IN_THOUSANDTHS.call();
 
         yield utils.assertThrows(ROSCATest.new(

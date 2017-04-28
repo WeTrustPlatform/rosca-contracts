@@ -18,7 +18,7 @@
     "eslint": "^3.12.2",
     "ethereumjs-testrpc": "^3.0.3",
     "scrypt": "^6.0.3",
-    "truffle": "^2.1.1"
+    "truffle": "^3.2.1"
   },
   "scripts": {
     "test": "./tools/build/run-testrpc-and-tests.sh"

@@ -4,6 +4,7 @@ let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
+let ROSCATest = artifacts.require('ROSCATest.sol');
 
 contract('ROSCA bid Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
@@ -108,7 +109,8 @@ contract('ROSCA bid Unit Test', function(accounts) {
         let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
-        const MAX_NEXT_BID_RATIO = yield (ROSCATest.deployed()).MAX_NEXT_BID_RATIO.call();
+        const roscaTest = yield ROSCATest.deployed()
+        const MAX_NEXT_BID_RATIO = yield roscaTest.MAX_NEXT_BID_RATIO.call();
         const NOT_LOW_ENOUGH_BID_TO_PLACE = DEFAULT_POT / 100 * MAX_NEXT_BID_RATIO + 100;
 
         utils.increaseTime(START_TIME_DELAY);

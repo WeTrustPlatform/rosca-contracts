@@ -4,6 +4,9 @@ let assert = require('chai').assert;
 let co = require("co").wrap;
 let consts = require("./consts.js");
 let Promise = require("bluebird");
+let ROSCATest = artifacts.require('ROSCATest.sol');
+let ExampleToken = artifacts.require('test/ExampleToken.sol');
+let ERC20TokenInterface = artifacts.require('deps/ERC20TokenInterface.sol');
 
 // we need this becaues test env is different than script env
 let myWeb3 = (typeof web3 === undefined ? undefined : web3);
