@@ -56,22 +56,13 @@ contract('end of ROSCA unit test', function(accounts) {
         let contractCredit = yield utils.contractNetCredit(rosca);
         assert.isAbove(contractCredit, 0); // If this fails, there is a bug in the test.
 
-        let eventFired = false;
-        let surplusWithdrawalEvent = rosca.LogForepersonSurplusWithdrawal();  // eslint-disable-line new-cap
-        surplusWithdrawalEvent.watch(function(error, log) {
-            surplusWithdrawalEvent.stopWatching();
-            eventFired = true;
-            assert.equal(log.args.amount, contractCredit,
-                "LogForepersonSurplusWithdrawal doesn't display proper amount value");
-        });
-
         let forepersonBalanceBefore = yield utils.getBalance(accounts[0], tokenContract);
 
-        yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
+        let result = yield rosca.endOfROSCARetrieveSurplus({from: accounts[0]});
+        let log = result.logs[0]
 
-        yield Promise.delay(500); // 300ms delay to allow the event to fire properly
-        assert.isOk(eventFired, "LogForepersonSurplusWithdrawal event did not fire");
-
+        assert.equal(log.args.amount, contractCredit,
+            "LogForepersonSurplusWithdrawal doesn't display proper amount value");
 
         let forepersonBalanceAfter = yield utils.getBalance(accounts[0], tokenContract);
 

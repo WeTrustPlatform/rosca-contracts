@@ -49,19 +49,14 @@ contract('ROSCA reentry attack test', function(accounts) {
     // Therefore, should be available to withdraw 1.45C.
     // However, if a re-entry attack is succesfful we should see twice that value transferred.
     let amountBefore = web3.eth.getBalance(attackContract.address);
-    let withdrawEvent = attackContract.LogWithdraw();  // eslint-disable-line new-cap
-    let eventFired = false;
-    let withdrawSuccessful = undefined;
-    withdrawEvent.watch(function(error, log) {
-        withdrawEvent.stopWatching();
-        eventFired = true;
-        withdrawSuccessful = log.args.success;
-    });
+
     // Try to attack
-    yield attackContract.withdrawTwice();
-    yield Promise.delay(500); // 300ms delay to allow the event to fire properly
+
+    let result = yield attackContract.withdrawTwice();
+    let log = result.logs[0]
+    let withdrawSuccessful = log.args.success;
+
     // Check that withdraw was tried out, returned false, and no money was transferred.
-    assert.isOk(eventFired);
     assert.isNotOk(withdrawSuccessful);
     let amountAfter = web3.eth.getBalance(attackContract.address);
     assert.equal(amountBefore.toNumber(), amountAfter.toNumber());

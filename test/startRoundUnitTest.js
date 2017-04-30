@@ -19,19 +19,11 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
             MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
 
-        let eventFired = false;
-        let startOfRoundEvent = rosca.LogStartOfRound();  // eslint-disable-line new-cap
-        startOfRoundEvent.watch(function(error, log) {
-            startOfRoundEvent.stopWatching();
-            eventFired = true;
-            assert.equal(log.args.currentRound, 1, "Log didnt show currentRound properly");
-        });
-
         utils.increaseTime(START_TIME_DELAY);
-        yield rosca.startRound();
+        let result = yield rosca.startRound();
+        let log = result.logs[0]
 
-        yield Promise.delay(300); // 300ms delay to allow the event to fire properly
-        assert.isOk(eventFired, "startOfRound event didn't fire");
+        assert.equal(log.args.currentRound, 1, "Log didnt show currentRound properly");
     }));
 
     it("watches for LogEndOfROSCA event", co(function* () {

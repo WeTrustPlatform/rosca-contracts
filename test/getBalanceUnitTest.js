@@ -98,22 +98,12 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
-        let winnerAddress = 0;
-
-        let eventFired = false;
-        let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(function(error, log) {
-            fundsReleasedEvent.stopWatching();
-            eventFired = true;
-            winnerAddress = log.args.winnerAddress;
-        });
-
         utils.increaseTime(ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        let result = yield rosca.startRound();
         // we expect one of the delinquent to win
+        let log = result.logs[0]
+        let winnerAddress = log.args.winnerAddress;
 
-        yield Promise.delay(500);
-        assert.isOk(eventFired);
         // get the balance of delinquent who had won the Pot
         // test by calling withdraw, which should throw and
         // make contribution = than balance, and call withdraw

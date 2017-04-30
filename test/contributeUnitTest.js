@@ -62,20 +62,12 @@ contract('ROSCA contribute Unit Test', function(accounts) {
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         const ACTUAL_CONTRIBUTION = CONTRIBUTION_SIZE * 0.1;
 
-        let eventFired = false;
-        let contributionMadeEvent = rosca.LogContributionMade();  // eslint-disable-line new-cap
-        contributionMadeEvent.watch(function(error, log) {
-            contributionMadeEvent.stopWatching();
-            eventFired = true;
-            assert.equal(log.args.user, accounts[1], "LogContributionMade doesn't display proper user value");
-            assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION,
-                "LogContributionMade doesn't display proper amount value");
-        });
+        let result = yield utils.contribute(rosca, accounts[1], ACTUAL_CONTRIBUTION);
+        let log = result.logs[0]
 
-        yield utils.contribute(rosca, accounts[1], ACTUAL_CONTRIBUTION);
-
-        yield Promise.delay(500); // 300ms delay to allow the event to fire properly
-        assert.isOk(eventFired, "LogContributionMade event did not fire");
+        assert.equal(log.args.user, accounts[1], "LogContributionMade doesn't display proper user value");
+        assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION,
+            "LogContributionMade doesn't display proper amount value");
       }
     }));
 
@@ -111,25 +103,15 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
-        let winnerAddress = 0;
-
-        let eventFired = false;
-        let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(function(error, log) {
-            fundsReleasedEvent.stopWatching();
-            eventFired = true;
-            winnerAddress = log.args.winnerAddress;
-        });
-
         utils.increaseTime(ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        let result = yield rosca.startRound();
+        let log = result.logs[0]
+        let winnerAddress = log.args.winnerAddress;
 
-        yield Promise.delay(300);
         // winnerAddress's credit should be 0.5 + 3(defaultPot) * fee
         // requirement to get Out of debt = 3(currentRound) + 3(defaultPot) * fee
         // so credit must be at least = 3(currentRound) + 3(defaultPot) * fee - totalDiscount
         // so winnerAddress needs to contribute = 2.5 - totalDiscount
-        assert.isOk(eventFired, "Fundreleased event did not occured");
         let contributionToNonDelinquency = 2.5 * CONTRIBUTION_SIZE - (yield rosca.totalDiscounts.call());
         yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
         // for some reason 1 is being rounded up so 10 is used instead

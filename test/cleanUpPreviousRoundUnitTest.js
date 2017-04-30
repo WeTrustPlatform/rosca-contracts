@@ -49,23 +49,17 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
             rosca.bid(BID_TO_PLACE, {from: accounts[1]}),
         ]);
 
-        let eventFired = false;
-        let fundsReleasedEvent = rosca.LogRoundFundsReleased();  // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(co(function* (error, log) {
-            fundsReleasedEvent.stopWatching();
-            eventFired = true;
-            let user = yield rosca.members.call(log.args.winnerAddress);
-            assert.equal(accounts[1], log.args.winnerAddress);
-            assert.isOk(user[3], "chosen address is not a member"); // user.alive
-            assert.isOk(user[2], "Paid member was chosen"); // user.paid
-            let expectedCredit = CONTRIBUTION_SIZE + utils.afterFee(BID_TO_PLACE, SERVICE_FEE_IN_THOUSANDTHS);
-            assert.equal(user[0].toString(), expectedCredit); // user.credit
-        }));
+        let result = yield rosca.cleanUpPreviousRound();
 
-        yield rosca.cleanUpPreviousRound();
+        let log = result.logs[0]
 
-        yield Promise.delay(300); // 300ms delay to allow the event to fire properly
-        assert.isOk(eventFired, "LogRoundFundsReleased didn't fire");
+        let user = yield rosca.members.call(log.args.winnerAddress);
+        assert.equal(accounts[1], log.args.winnerAddress);
+        assert.isOk(user[3], "chosen address is not a member"); // user.alive
+        assert.isOk(user[2], "Paid member was chosen"); // user.paid
+        let expectedCredit = CONTRIBUTION_SIZE + utils.afterFee(BID_TO_PLACE, SERVICE_FEE_IN_THOUSANDTHS);
+        assert.equal(user[0].toString(), expectedCredit); // user.credit
+
     }));
 
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function* () {
@@ -85,19 +79,13 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         let possibleWinner = [accounts[0], accounts[2]];
         let winnerAddress = 0;
 
-        let eventFired = false;
-        let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(co(function* (error, log) {
-            fundsReleasedEvent.stopWatching();
-            eventFired = true;
-            winnerAddress = log.args.winnerAddress;
-            winner = yield rosca.members.call(log.args.winnerAddress);
-        }));
+        let result = yield rosca.cleanUpPreviousRound();
 
-        yield rosca.cleanUpPreviousRound();
+        let log = result.logs[0]
 
-        yield Promise.delay(300);
-        assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
+        winnerAddress = log.args.winnerAddress;
+        winner = yield rosca.members.call(log.args.winnerAddress);
+
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
         assert.equal(winner[0], CONTRIBUTION_SIZE + utils.afterFee(DEFAULT_POT, SERVICE_FEE_IN_THOUSANDTHS),  // credit
             "lowestBid is not deposited into winner's credit"); // winner.credit
@@ -124,23 +112,13 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         let p1Credit = (yield rosca.members.call(accounts[1]))[0];
         assert.equal(p1Credit.toString(), (CONTRIBUTION_SIZE + pot / 1000 * (1000 - SERVICE_FEE_IN_THOUSANDTHS)));
 
-        let winner;
         let possibleWinner = [accounts[0], accounts[2]];
-        let winnerAddress = 0;
 
-        let eventFired = false;
-        let fundsReleasedEvent = rosca.LogRoundFundsReleased();    // eslint-disable-line new-cap
-        fundsReleasedEvent.watch(co(function* (error, log) {
-            fundsReleasedEvent.stopWatching();
-            eventFired = true;
-            winnerAddress = log.args.winnerAddress;
-            winner = yield rosca.members.call(log.args.winnerAddress);
-        }));
+        let result = yield rosca.cleanUpPreviousRound();
+        let log = result.logs[0]
+        let winnerAddress = log.args.winnerAddress;
+        let winner = yield rosca.members.call(log.args.winnerAddress);
 
-        yield rosca.cleanUpPreviousRound();
-
-        yield Promise.delay(300);
-        assert.isOk(eventFired, "LogRoundFundReleased didn't occur");
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
         assert.equal(winner[0].toString(), utils.afterFee((memberList.length + 1) * CONTRIBUTION_SIZE,
             SERVICE_FEE_IN_THOUSANDTHS)); // winner.credit

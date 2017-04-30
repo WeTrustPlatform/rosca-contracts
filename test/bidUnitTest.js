@@ -64,19 +64,12 @@ contract('ROSCA bid Unit Test', function(accounts) {
             rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
         ]);
 
-        let eventFired = false;
-        let bidEvent = rosca.LogNewLowestBid();  // eslint-disable-line new-cap
-        bidEvent.watch(function(error, log) {
-            bidEvent.stopWatching();
-            eventFired = true;
-            assert.equal(log.args.bid, BID_TO_PLACE, "Log doesn't show the proper bid value");
-            assert.equal(log.args.winnerAddress, accounts[2], "Log doesn't show proper winnerAddress");
-        });
+        let result = yield rosca.bid(BID_TO_PLACE, {from: accounts[2]});
 
-        yield rosca.bid(BID_TO_PLACE, {from: accounts[2]});
+        let log = result.logs[0]
 
-        yield Promise.delay(300);
-        assert.isOk(eventFired, "Bid event did not fire");
+        assert.equal(log.args.bid, BID_TO_PLACE, "Log doesn't show the proper bid value");
+        assert.equal(log.args.winnerAddress, accounts[2], "Log doesn't show proper winnerAddress");
 
         utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();

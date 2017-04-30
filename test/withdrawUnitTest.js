@@ -53,20 +53,12 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         yield utils.contribute(rosca, accounts[0], ACTUAL_CONTRIBUTION);
 
-        let eventFired = false;
-        let fundsWithdrawalEvent = rosca.LogFundsWithdrawal();  // eslint-disable-line new-cap
-        fundsWithdrawalEvent.watch(function(error, log) {
-            fundsWithdrawalEvent.stopWatching();
-            eventFired = true;
-            assert.equal(log.args.user, accounts[0], "LogContributionMade doesn't display proper user value");
-            assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION,
-                "LogContributionMade doesn't display proper amount value");
-        });
+        let result = yield rosca.withdraw({from: accounts[0]});
+        let log = result.logs[0]
 
-        yield rosca.withdraw({from: accounts[0]});
-
-        yield Promise.delay(300); // 300ms delay to allow the event to fire properly
-        assert.isOk(eventFired, "LogContributionMade didn't fire");
+        assert.equal(log.args.user, accounts[0], "LogContributionMade doesn't display proper user value");
+        assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION,
+            "LogContributionMade doesn't display proper amount value");
       }
     }));
 
@@ -96,32 +88,16 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound(); // 2nd Member will be entitled to DEFAULT_POT which is greater than CONTRIBUTION_SIZE
 
-        let withdrewAmount = 0;
         let creditBefore = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceBefore = yield utils.getBalance(accounts[2], tokenContract);
 
         // We expect two events: LogCannotWithdrawFully that specifies how much the user was credited for,
         // and the regular LogWithdrawalEvent from which we learn how much was actually withdrawn.
-        let partialWithdrawalEventFired = false;
-        let partialWithdrawalEvent = rosca.LogCannotWithdrawFully();  // eslint-disable-line new-cap
-        partialWithdrawalEvent.watch(function(error, log) {
-            partialWithdrawalEvent.stopWatching();
-            partialWithdrawalEventFired = true;
-        });
 
-        let regularWithdrawalEventFired = false;
-        let regularWithdrawalEvent = rosca.LogFundsWithdrawal();  // eslint-disable-line new-cap
-        regularWithdrawalEvent.watch(function(error, log) {
-            withdrewAmount = log.args.amount;
-            regularWithdrawalEvent.stopWatching();
-            regularWithdrawalEventFired = true;
-        });
+        let result = yield rosca.withdraw({from: accounts[2]});
+        let withdrewAmount = result.logs[1].args.amount;
 
-        yield rosca.withdraw({from: accounts[2]});
-
-        yield Promise.delay(300); // 300ms delay to allow the event to fire properly
-        assert.isOk(partialWithdrawalEventFired);
-        assert.isOk(regularWithdrawalEventFired);
+        assert.isDefined(result.logs[0])// checks if LogCannotWithdrawFully fires properly
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceAfter = yield utils.getBalance(accounts[2], tokenContract);
@@ -180,32 +156,16 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         utils.increaseTime(ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
-        let withdrewAmount = 0;
         let creditBefore = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceBefore = web3.eth.getBalance(accounts[2]).toNumber();
 
         // We expect two events: LogCannotWithdrawFully that specifies how much the user was credited for,
         // and the regular LogWithdrawalEvent from which we learn how much was actually withdrawn.
-        let partialWithdrawalEventFired = false;
-        let partialWithdrawalEvent = rosca.LogCannotWithdrawFully();  // eslint-disable-line new-cap
-        partialWithdrawalEvent.watch(function(error, log) {
-            partialWithdrawalEvent.stopWatching();
-            partialWithdrawalEventFired = true;
-        });
 
-        let regularWithdrawalEventFired = false;
-        let regularWithdrawalEvent = rosca.LogFundsWithdrawal();  // eslint-disable-line new-cap
-        regularWithdrawalEvent.watch(function(error, log) {
-            withdrewAmount = log.args.amount;
-            regularWithdrawalEvent.stopWatching();
-            regularWithdrawalEventFired = true;
-        });
+        let result = yield rosca.withdraw({from: accounts[2]});
 
-        yield rosca.withdraw({from: accounts[2]});
-
-        yield Promise.delay(300);
-        assert.isOk(partialWithdrawalEventFired);
-        assert.isOk(regularWithdrawalEventFired);
+        let withdrewAmount = result.logs[1].args.amount
+        assert.isDefined(result.logs[0])// checks if LogCannotWithdrawFully fires properly
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
         let memberBalanceAfter = web3.eth.getBalance(accounts[2]).toNumber();
