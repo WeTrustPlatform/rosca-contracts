@@ -9,6 +9,7 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let ExampleToken = artifacts.require('test/ExampleToken.sol');
+let consts = require('./utils/consts')
 
 let expectedContractBalance;
 let p0ExpectedCredit;
@@ -83,8 +84,6 @@ function* getContractStatus() {
 }
 
 contract('Full 4 Member ROSCA Test', function(accounts_) {
-  const START_DELAY = 86400 + 10;
-  const ROUND_PERIOD_IN_SECS = 3000;
   const MEMBER_COUNT = 4;
   const CONTRIBUTION_SIZE = 1e18;
   const DEFAULT_POT = CONTRIBUTION_SIZE * MEMBER_COUNT;
@@ -99,13 +98,13 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     let blockTime = latestBlock.timestamp;
     let relevantAccounts = accounts.slice(0, 4);
     ROSCATest.new(
-      0 /* use ETH */, ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_DELAY,
+      0 /* use ETH */, consts.ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY,
       relevantAccounts.slice(1) /* no foreperson */, SERVICE_FEE_IN_THOUSANDTHS).then((aRosca) => {
         ethRosca = {rosca: aRosca, tokenContract: 0};
         ExampleToken.new(relevantAccounts).then((exampleTokenContract) => {
           ROSCATest.new(
-            exampleTokenContract.address, ROUND_PERIOD_IN_SECS,
-            CONTRIBUTION_SIZE, blockTime + START_DELAY, relevantAccounts.slice(1),
+            exampleTokenContract.address, consts.ROUND_PERIOD_IN_SECS,
+            CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, relevantAccounts.slice(1),
             SERVICE_FEE_IN_THOUSANDTHS).then(function(bRosca) {
               tokenRosca = {rosca: bRosca, tokenContract: exampleTokenContract};
 
@@ -133,11 +132,11 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
   }
 
   function* test1stRound() {
-    utils.increaseTime(START_DELAY + 10);  // take some buffer
+    utils.increaseTime(consts.START_TIME_DELAY + 10);  // take some buffer
     // 1st round: p2 wins 0.95 of the pot
     yield contribute(0, CONTRIBUTION_SIZE * 10); // p0's credit == 10C
     yield contribute(2, CONTRIBUTION_SIZE);  // p2's credit == C
-    utils.increaseTime(ROUND_PERIOD_IN_SECS);
+    utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
     yield Promise.all([
         startRound(),
@@ -151,7 +150,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
         bid(1, DEFAULT_POT * 0.97), // higher than lowestBid; ignored
     ]);
 
-    utils.increaseTime(ROUND_PERIOD_IN_SECS);
+    utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
     yield startRound();
 
@@ -211,7 +210,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     yield utils.assertThrows(bid(2, DEFAULT_POT * 0.75));  // 2 already won
     yield utils.assertThrows(bid(3, DEFAULT_POT * 0.75));  // 3 is not in good standing
 
-    utils.increaseTime(ROUND_PERIOD_IN_SECS);
+    utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
     yield startRound();
 
@@ -267,7 +266,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
       contribute(3, CONTRIBUTION_SIZE),  // p3's credit == C + C == 2C
     ]);
 
-    utils.increaseTime(ROUND_PERIOD_IN_SECS);
+    utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
     // Nobody bids and the round ends.
     yield startRound();
@@ -332,7 +331,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
     yield utils.assertThrows(bid(2, DEFAULT_POT * 0.9));
     yield utils.assertThrows(bid(3, DEFAULT_POT * 0.9));
 
-    utils.increaseTime(ROUND_PERIOD_IN_SECS);
+    utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
     // Nobody bids and the round ends.
     yield startRound();
@@ -389,7 +388,7 @@ contract('Full 4 Member ROSCA Test', function(accounts_) {
   }
 
   function* postRoscaCollectionPeriod() {
-    utils.increaseTime(ROUND_PERIOD_IN_SECS);
+    utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
     // Only the foreperson can collect the surplus funds.
     yield utils.assertThrows(currentRosca.rosca.endOfROSCARetrieveSurplus({from: accounts[2]}));
     let p0balanceBefore = yield getBalance(accounts[0]);

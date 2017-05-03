@@ -4,24 +4,22 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
+let consts = require('./utils/consts')
 
 contract('ROSCA constructor Unit Test', function(accounts) {
-    // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_SECS = 100;
-    const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
-    const CONTRIBUTION_SIZE = 1e16;
-    const SERVICE_FEE_IN_THOUSANDTHS = 2;
-    const START_TIME_DELAY = 10; // 10 seconds buffer
+    before(function () {
+        consts.setMemberList(accounts)
+    })
 
-    it("Throws if ROUND_PERIOD_IN_SECS == 0", co(function* () {
+    it("Throws if consts.ROUND_PERIOD_IN_SECS == 0", co(function* () {
         utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
         let latestBlock = web3.eth.getBlock("latest");
         let blockTime = latestBlock.timestamp;
 
         yield utils.assertThrows(ROSCATest.new(
-            0 /* use ETH */, 0 /* roundTimeInSecs */, CONTRIBUTION_SIZE,
-            blockTime + START_TIME_DELAY, MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS),
+            0 /* use ETH */, 0 /* roundTimeInSecs */, consts.CONTRIBUTION_SIZE,
+            blockTime + consts.START_TIME_DELAY, consts.MEMBER_LIST(), consts.SERVICE_FEE_IN_THOUSANDTHS),
             "contract creation successful");
     }));
 
@@ -36,9 +34,9 @@ contract('ROSCA constructor Unit Test', function(accounts) {
             (yield deployed.MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS.call()).toNumber();
 
         yield utils.assertThrows(ROSCATest.new(
-            0 /* use ETH */, ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE,
-            blockTime - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS - 1, MEMBER_LIST,
-            SERVICE_FEE_IN_THOUSANDTHS));
+            0 /* use ETH */, consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
+            blockTime - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS - 1, consts.MEMBER_LIST(),
+            consts.SERVICE_FEE_IN_THOUSANDTHS));
     }));
 
     it("Throws if feeInThousandths > MAX_FEE_IN_THOUSANTHS", co(function* () {
@@ -52,7 +50,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
         yield utils.assertThrows(ROSCATest.new(
             0 /* use ETH */,
-            ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
+            consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, consts.MEMBER_LIST(),
             MAX_FEE.add(1)), "contract creation successful");
     }));
 
@@ -66,8 +64,8 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         // about whether or not ROSCA uses a token contract.
         let rosca = yield ROSCATest.new(
             0 /* use ETH */,
-            ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE_IN_THOUSANDTHS);
+            consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, consts.MEMBER_LIST(),
+            consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         if (!rosca) {
             assert.isNotOk(true, "rosca with valid parameter is not working");

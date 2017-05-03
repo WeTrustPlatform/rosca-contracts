@@ -4,38 +4,33 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
+let consts = require('./utils/consts')
 
 contract('Escape Hatch unit test', function(accounts) {
-  const START_TIME_DELAY = 86400 + 10;
-  const TIME_TO_WAIT_FOR_ROSCA_TO_START = START_TIME_DELAY + 10;
-  const ROUND_PERIOD_IN_SECS = 100;
-  const SERVICE_FEE_IN_THOUSANDTHS = 2;
+  before(function () {
+    consts.setMemberList(accounts)
+  })
   // Note accounts[0] is the foreperson, deploying the contract.
-  const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
-  const MEMBER_COUNT = MEMBER_LIST.length + 1;  // foreperson
-  const CONTRIBUTION_SIZE = 1e16;
   let ESCAPE_HATCH_ENABLER;
 
   let createETHandERC20Roscas = co(function* () {
-    let ethRosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
-    let erc20Rosca = yield utils.createERC20ROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS, accounts);
+    let ethRosca = yield utils.createEthROSCA();
+    let erc20Rosca = yield utils.createERC20ROSCA(accounts);
     return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
   });
 
   // Runs the ROSCA 2 rounds. Everyone contributes, no one withdraws.
   function* runRoscUpToAPoint(rosca) {
     // Get to the start of the ROSCA.
-    utils.increaseTime(TIME_TO_WAIT_FOR_ROSCA_TO_START);
+    utils.increaseTime(consts.START_TIME_DELAY);
 
     for (let round = 0; round < 2; round++) {
       yield rosca.startRound({from: accounts[0]});
 
-      for (let participant = 0; participant < MEMBER_COUNT; participant++) {
-        yield utils.contribute(rosca, accounts[participant], CONTRIBUTION_SIZE);
+      for (let participant = 0; participant < consts.MEMBER_COUNT(); participant++) {
+        yield utils.contribute(rosca, accounts[participant], consts.CONTRIBUTION_SIZE);
       }
-      utils.increaseTime(ROUND_PERIOD_IN_SECS);
+      utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
     }
   }
 
@@ -44,8 +39,7 @@ contract('Escape Hatch unit test', function(accounts) {
     // way of setting this var in the first test.
     ESCAPE_HATCH_ENABLER = yield (yield ROSCATest.deployed()).ESCAPE_HATCH_ENABLER.call();
 
-    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+    let rosca = yield utils.createEthROSCA();
     yield* runRoscUpToAPoint(rosca);
     yield utils.assertThrows(rosca.enableEscapeHatch({from: accounts[0]}));  // foreperson
     yield utils.assertThrows(rosca.enableEscapeHatch({from: accounts[3]}));  // member
@@ -54,8 +48,7 @@ contract('Escape Hatch unit test', function(accounts) {
   }));
 
   it("checks that only foreperson can activate the escape hatch and that too only when enabled", co(function* () {
-    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+    let rosca = yield utils.createEthROSCA();
     yield* runRoscUpToAPoint(rosca);
     yield utils.assertThrows(rosca.activateEscapeHatch({from: accounts[3]}));  // member
     yield utils.assertThrows(rosca.activateEscapeHatch({from: ESCAPE_HATCH_ENABLER}));
@@ -70,23 +63,21 @@ contract('Escape Hatch unit test', function(accounts) {
   }));
 
   it("checks that when escape hatch is enabled but not activated, contribute and withdraw still work", co(function* () {
-    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+    let rosca = yield utils.createEthROSCA();
     yield* runRoscUpToAPoint(rosca);
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
 
-    yield rosca.contribute({from: accounts[1], value: CONTRIBUTION_SIZE * 7});
+    yield rosca.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE * 7});
     yield rosca.withdraw({from: accounts[1]});
   }));
 
   it("checks that once escape hatch is activated, contribute and withdraw throw", co(function* () {
-    let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+    let rosca = yield utils.createEthROSCA();
     yield* runRoscUpToAPoint(rosca);
     yield rosca.enableEscapeHatch({from: ESCAPE_HATCH_ENABLER});  // escape hatch enabler
     yield rosca.activateEscapeHatch({from: accounts[0]});
 
-    yield utils.assertThrows(rosca.contribute(CONTRIBUTION_SIZE* 7, {from: accounts[1]}));
+    yield utils.assertThrows(rosca.contribute(consts.CONTRIBUTION_SIZE* 7, {from: accounts[1]}));
     yield utils.assertThrows(rosca.withdraw({from: accounts[1]}));
   }));
 

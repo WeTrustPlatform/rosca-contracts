@@ -8,21 +8,16 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
-
+let consts = require('./utils/consts')
 
 contract('ROSCA contribute Unit Test', function(accounts) {
-    // Parameters for new ROSCA creation
-    const ROUND_PERIOD_IN_SECS = 100;
-    const MEMBER_LIST = [accounts[1], accounts[2], accounts[3]];
-    const CONTRIBUTION_SIZE = 1e16;
-    const SERVICE_FEE_IN_THOUSANDTHS = 2;
-    const START_TIME_DELAY = 10; // 10 seconds buffer
-
+    before(function () {
+      consts.setMemberList(accounts)
+    })
+  
     let createETHandERC20Roscas = co(function* () {
-      let ethRosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-          MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
-      let erc20Rosca = yield utils.createERC20ROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-          MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS, accounts);
+      let ethRosca = yield utils.createEthROSCA();
+      let erc20Rosca = yield utils.createERC20ROSCA(accounts);
       return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
     });
 
@@ -30,37 +25,29 @@ contract('ROSCA contribute Unit Test', function(accounts) {
       let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         // check if valid contribution can be made
-        yield utils.contribute(rosca, accounts[2], CONTRIBUTION_SIZE);
+        yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE);
 
         // check throws when contributing from non-member.
-        yield utils.assertThrows(utils.contribute(rosca, accounts[4], CONTRIBUTION_SIZE),
+        yield utils.assertThrows(utils.contribute(rosca, accounts[4], consts.CONTRIBUTION_SIZE),
             "calling contribute from a non-member success");
       }
     }));
 
     it("throws when contributing after end of Rosca", co(function* () {
-        utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
+        let rosca = yield utils.createEthROSCA();
 
-        let latestBlock = web3.eth.getBlock("latest");
-        let blockTime = latestBlock.timestamp;
-
-        let rosca = yield ROSCATest.new(
-            0  /* use ETH */,
-            ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-            SERVICE_FEE_IN_THOUSANDTHS);
-
-        for (let i = 0; i < MEMBER_LIST.length + 2; i++) {
-            utils.increaseTime(ROUND_PERIOD_IN_SECS);
+        for (let i = 0; i < consts.MEMBER_LIST().length + 2; i++) {
+            utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
             yield rosca.startRound();
         }
 
-        utils.assertThrows(rosca.contribute({from: accounts[0], value: CONTRIBUTION_SIZE}));
+        utils.assertThrows(rosca.contribute({from: accounts[0], value: consts.CONTRIBUTION_SIZE}));
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function* () {
       let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
-        const ACTUAL_CONTRIBUTION = CONTRIBUTION_SIZE * 0.1;
+        const ACTUAL_CONTRIBUTION = consts.CONTRIBUTION_SIZE * 0.1;
 
         let result = yield utils.contribute(rosca, accounts[1], ACTUAL_CONTRIBUTION);
         let log = result.logs[0]
@@ -74,10 +61,10 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     it("Checks whether the contributed value gets registered properly", co(function* () {
       let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
-        const CONTRIBUTION_CHECK = CONTRIBUTION_SIZE * 1.2;
+        const CONTRIBUTION_CHECK = consts.CONTRIBUTION_SIZE * 1.2;
 
-        yield utils.contribute(rosca, accounts[2], CONTRIBUTION_SIZE * 0.2);
-        yield utils.contribute(rosca, accounts[2], CONTRIBUTION_SIZE);
+        yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE * 0.2);
+        yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE);
 
         let creditAfter = (yield rosca.members.call(accounts[2]))[0];
 
@@ -88,22 +75,20 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     it("checks delinquent winner who contributes the right amount no longer considered delinquent",
       co(function* () {
         let members = [accounts[1], accounts[2]];
-        let rosca = yield utils.createEthROSCA(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-            members, SERVICE_FEE_IN_THOUSANDTHS);
-        let DEFAULT_POT = MEMBER_LIST.length * CONTRIBUTION_SIZE;
-        utils.increaseTime(START_TIME_DELAY);
+        let rosca = yield utils.createEthROSCA(members);
+        utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
-            rosca.contribute({from: accounts[1], value: 0.5 * CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[0], value: 0.5 * CONTRIBUTION_SIZE}),
-            rosca.contribute({from: accounts[2], value: CONTRIBUTION_SIZE}),
-            rosca.bid(DEFAULT_POT * 0.8, {from: accounts[2]}),
+            rosca.contribute({from: accounts[1], value: 0.5 * consts.CONTRIBUTION_SIZE}),
+            rosca.contribute({from: accounts[0], value: 0.5 * consts.CONTRIBUTION_SIZE}),
+            rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE}),
+            rosca.bid(consts.DEFAULT_POT() * 0.8, {from: accounts[2]}),
         ]);
 
-        utils.increaseTime(ROUND_PERIOD_IN_SECS);
+        utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
         yield rosca.startRound();
 
-        utils.increaseTime(ROUND_PERIOD_IN_SECS);
+        utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
         let result = yield rosca.startRound();
         let log = result.logs[0]
         let winnerAddress = log.args.winnerAddress;
@@ -112,7 +97,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         // requirement to get Out of debt = 3(currentRound) + 3(defaultPot) * fee
         // so credit must be at least = 3(currentRound) + 3(defaultPot) * fee - totalDiscount
         // so winnerAddress needs to contribute = 2.5 - totalDiscount
-        let contributionToNonDelinquency = 2.5 * CONTRIBUTION_SIZE - (yield rosca.totalDiscounts.call());
+        let contributionToNonDelinquency = 2.5 * consts.CONTRIBUTION_SIZE - (yield rosca.totalDiscounts.call());
         yield utils.assertThrows(rosca.withdraw({from: winnerAddress}));
         // for some reason 1 is being rounded up so 10 is used instead
         yield rosca.contribute({from: winnerAddress, value: (contributionToNonDelinquency - 10)});

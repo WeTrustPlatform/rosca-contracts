@@ -34,30 +34,36 @@ module.exports = {
     });
   },
 
-  createROSCA: function(ERC20Address, ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-                        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS) {
+  createROSCA: function(ERC20Address, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+                        optMemberList, optServicefeeInThousandths) {
+    optRoundPeriodInSecs = optRoundPeriodInSecs || consts.ROUND_PERIOD_IN_SECS
+    optcontributionSize = optcontributionSize || consts.CONTRIBUTION_SIZE
+    optStartTimeDelay = optStartTimeDelay || consts.START_TIME_DELAY
+    optMemberList = optMemberList || consts.MEMBER_LIST()
+    optServicefeeInThousandths = optServicefeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS
+
     this.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
     return ROSCATest.new(
         ERC20Address,
-        ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-        SERVICE_FEE_IN_THOUSANDTHS);
+        optRoundPeriodInSecs, optcontributionSize, blockTime + optStartTimeDelay, optMemberList,
+        optServicefeeInThousandths);
   },
 
-  createEthROSCA: function(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-                           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS) {
-    return this.createROSCA(0 /* use ETH */, ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE,
-                            START_TIME_DELAY, MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+  createEthROSCA: function(optMemberList, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+                            optServicefeeInThousandths) {
+    return this.createROSCA(0 /* use ETH */, optRoundPeriodInSecs, optcontributionSize,
+                            optStartTimeDelay, optMemberList, optServicefeeInThousandths);
   },
 
-  createERC20ROSCA: co(function* (ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-                                 MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS, accountsToInjectTo) {
+  createERC20ROSCA: co(function* (accountsToInjectTo, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+                                 optMemberList, optServicefeeInThousandths) {
     let exampleToken = yield ExampleToken.new(accountsToInjectTo || []);
-    return this.createROSCA(exampleToken.address, ROUND_PERIOD_IN_SECS,  // eslint-disable-line no-invalid-this
-                              CONTRIBUTION_SIZE, START_TIME_DELAY, MEMBER_LIST,
-                              SERVICE_FEE_IN_THOUSANDTHS);
+    return this.createROSCA(exampleToken.address, optRoundPeriodInSecs,  // eslint-disable-line no-invalid-this
+                              optcontributionSize, optStartTimeDelay, optMemberList,
+                              optServicefeeInThousandths);
   }),
 
   // Currency-agnostic
