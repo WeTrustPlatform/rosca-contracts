@@ -4,21 +4,22 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
-let consts = require('./utils/consts')
-let latestBlock
-let blockTime
+let consts = require('./utils/consts');
+
+let latestBlock;
+let blockTime;
 
 contract('ROSCA constructor Unit Test', function(accounts) {
-    before(function () {
-        consts.setMemberList(accounts)
-    })
-  
+    before(function() {
+        consts.setMemberList(accounts);
+    });
+
     beforeEach(co(function* () {
       utils.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
       latestBlock = web3.eth.getBlock("latest");
       blockTime = latestBlock.timestamp;
-    }))
+    }));
 
     it("Throws if consts.ROUND_PERIOD_IN_SECS == 0", co(function* () {
         yield utils.assertThrows(ROSCATest.new(

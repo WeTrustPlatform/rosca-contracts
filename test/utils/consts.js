@@ -7,24 +7,22 @@ module.exports = {
   CONTRIBUTION_SIZE: 1e16,
   memberList: function() {
     if(!memberList) {
-      console.log('Member list needs to be set first before calling MEMBER_LIST');
-      process.exit(2);
+      throw new Error('Member list needs to be set first before calling MEMBER_COUNT');
     }
     return memberList;
   },
   setMemberList: function(accounts) {
-    memberList = [accounts[1], accounts[2], accounts[3]]
+    memberList = [accounts[1], accounts[2], accounts[3]];
   },
   memberCount: function() {
     if(!memberList) {
-      console.log('Member list needs to be set first before calling MEMBER_COUNT');
-      process.exit(2);
+      throw new Error('Member list needs to be set first before calling MEMBER_COUNT');
     }
 
     return memberList.length + 1;
   },
-  defaultPot : function() {
-    return (this.CONTRIBUTION_SIZE * this.memberCount())
+  defaultPot: function() {
+    return (this.CONTRIBUTION_SIZE * this.memberCount());
   },
   SERVICE_FEE_IN_THOUSANDTHS: 2,
   START_TIME_DELAY: 10,

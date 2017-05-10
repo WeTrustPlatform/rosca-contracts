@@ -6,7 +6,7 @@ let assert = require('chai').assert;
 let utils = require("../utils/utils.js");
 let TestReEntryAttack = artifacts.require('test/TestReEntryAttack.sol');
 let ROSCATest = artifacts.require('ROSCATest.sol');
-let consts = require('../utils/consts')
+let consts = require('../utils/consts');
 
 contract('ROSCA reentry attack test', function(accounts) {
   // Parameters for new ROSCA creation
@@ -50,7 +50,7 @@ contract('ROSCA reentry attack test', function(accounts) {
     // Try to attack
 
     let result = yield attackContract.withdrawTwice();
-    let log = result.logs[0]
+    let log = result.logs[0];
     let withdrawSuccessful = log.args.success;
 
     // Check that withdraw was tried out, returned false, and no money was transferred.

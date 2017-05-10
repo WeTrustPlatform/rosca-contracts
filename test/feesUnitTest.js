@@ -5,7 +5,7 @@ let assert = require('chai').assert;
 let co = require('co').wrap;
 let utils = require('./utils/utils.js');
 let ROSCATest = artifacts.require('ROSCATest.sol');
-let consts = require('./utils/consts')
+let consts = require('./utils/consts');
 
 let accounts;
 let rosca;
@@ -28,10 +28,10 @@ function withdraw(from) {
 }
 
 contract('fees unit test', function(accounts_) {
+  before(function() {
+    consts.setMemberList(accounts_);
+  });
 
-  before(function () {
-    consts.setMemberList(accounts_)
-  })
   // Note accounts[0] is the foreperson, deploying the contract.
   const MEMBER_LIST = accounts_.slice(1, 2);  // a
   // ccounts[0] is also participant, as a foreperson

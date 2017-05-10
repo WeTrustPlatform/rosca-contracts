@@ -4,29 +4,31 @@ let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
-let consts = require('./utils/consts')
-let rosca
+let consts = require('./utils/consts');
+let ROSCAHelper = require('./utils/roscaHelper')
+
+let rosca;
 
 contract('ROSCA startRound Unit Test', function(accounts) {
-    before(function () {
-        consts.setMemberList(accounts)
-    })
+    before(function() {
+      consts.setMemberList(accounts);
+    });
 
     beforeEach(co(function* () {
-      rosca = yield utils.createEthROSCA()
-    }))
+      rosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
+    }));
 
     it("watches for LogstartOfRound event", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
         let result = yield rosca.startRound();
-        let log = result.logs[0]
+        let log = result.logs[0];
 
         assert.equal(log.args.currentRound, 1, "Log didnt show currentRound properly");
     }));
 
     it("watches for LogEndOfROSCA event", co(function* () {
         let eventFired = false;
-        let endOfRoscaEvent = rosca.LogEndOfROSCA();  // eslint-disable-line new-cap
+        let endOfRoscaEvent = rosca.getCurrentRosca().LogEndOfROSCA();  // eslint-disable-line new-cap
         endOfRoscaEvent.watch(function(error, log) {
             endOfRoscaEvent.stopWatching();
             eventFired = true;
@@ -46,11 +48,11 @@ contract('ROSCA startRound Unit Test', function(accounts) {
         for (let i = 0; i < consts.memberCount() + 1; i++) {
             yield utils.assertThrows(rosca.startRound(), "expected calling startRound before roundStartTime to throw");
 
-            yield rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE});
+            yield rosca.contribute(2, consts.CONTRIBUTION_SIZE);
 
             utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
             yield rosca.startRound();
         }
-        assert.isOk(yield rosca.endOfROSCA.call());  // Unfortunately, we need to check the internal var directly.
+        assert.isOk(yield rosca.getCurrentRosca().endOfROSCA.call());  // Unfortunately, we need to check the internal var directly.
     }));
 });

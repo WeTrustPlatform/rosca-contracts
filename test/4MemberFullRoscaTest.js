@@ -9,7 +9,7 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let ExampleToken = artifacts.require('test/ExampleToken.sol');
-let consts = require('./utils/consts')
+let consts = require('./utils/consts');
 
 let expectedContractBalance;
 let p0ExpectedCredit;
