@@ -9,20 +9,20 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let consts = require('./utils/consts')
+let roscas
+let rosca
 
 contract('ROSCA contribute Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
     })
-  
-    let createETHandERC20Roscas = co(function* () {
-      let ethRosca = yield utils.createEthROSCA();
-      let erc20Rosca = yield utils.createERC20ROSCA(accounts);
-      return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
-    });
+
+    beforeEach(co(function* () {
+      roscas = yield utils.createETHandERC20Roscas(accounts);
+      rosca = yield utils.createEthROSCA();
+    }))
 
     it("throws when calling contribute from a non-member", co(function* () {
-      let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         // check if valid contribution can be made
         yield utils.contribute(rosca, accounts[2], consts.CONTRIBUTION_SIZE);
@@ -34,9 +34,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("throws when contributing after end of Rosca", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
-        for (let i = 0; i < consts.MEMBER_LIST().length + 2; i++) {
+        for (let i = 0; i < consts.memberList().length + 2; i++) {
             utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
             yield rosca.startRound();
         }
@@ -45,7 +43,6 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function* () {
-      let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         const ACTUAL_CONTRIBUTION = consts.CONTRIBUTION_SIZE * 0.1;
 
@@ -59,7 +56,6 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("Checks whether the contributed value gets registered properly", co(function* () {
-      let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         const CONTRIBUTION_CHECK = consts.CONTRIBUTION_SIZE * 1.2;
 
@@ -82,7 +78,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             rosca.contribute({from: accounts[1], value: 0.5 * consts.CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[0], value: 0.5 * consts.CONTRIBUTION_SIZE}),
             rosca.contribute({from: accounts[2], value: consts.CONTRIBUTION_SIZE}),
-            rosca.bid(consts.DEFAULT_POT() * 0.8, {from: accounts[2]}),
+            rosca.bid(consts.defaultPot() * 0.8, {from: accounts[2]}),
         ]);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);

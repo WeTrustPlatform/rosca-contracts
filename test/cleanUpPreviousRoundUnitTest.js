@@ -5,16 +5,19 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts')
+let rosca
 
 contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
     })
 
-    it("checks if totalDiscount grows when lowestBid < consts.DEFAULT_POT()", co(function* () {
-        let rosca = yield utils.createEthROSCA();
+    beforeEach(co(function* () {
+      rosca = yield utils.createEthROSCA();
+    }))
 
-        const BID_TO_PLACE = consts.DEFAULT_POT() * 0.75;
+    it("checks if totalDiscount grows when lowestBid < consts.defaultPot()", co(function* () {
+        const BID_TO_PLACE = consts.defaultPot() * 0.75;
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
@@ -25,15 +28,13 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         ]);
 
         let discount = yield rosca.totalDiscounts.call();
-        const expectedDiscount = utils.afterFee(consts.DEFAULT_POT() - BID_TO_PLACE, consts.SERVICE_FEE_IN_THOUSANDTHS) / consts.MEMBER_COUNT();
+        const expectedDiscount = utils.afterFee(consts.defaultPot() - BID_TO_PLACE, consts.SERVICE_FEE_IN_THOUSANDTHS) / consts.memberCount();
 
         assert.equal(discount, expectedDiscount, "toalDiscount value didn't get added properly");
     }));
 
     it("watches for LogRoundFundsReleased event and check if winner gets proper values", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
-        const BID_TO_PLACE = consts.DEFAULT_POT() * 0.68;
+        const BID_TO_PLACE = consts.defaultPot() * 0.68;
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
@@ -56,8 +57,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     }));
 
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
             rosca.startRound(),
@@ -79,7 +78,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         winner = yield rosca.members.call(log.args.winnerAddress);
 
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
-        assert.equal(winner[0], consts.CONTRIBUTION_SIZE + utils.afterFee(consts.DEFAULT_POT(), consts.SERVICE_FEE_IN_THOUSANDTHS),  // credit
+        assert.equal(winner[0], consts.CONTRIBUTION_SIZE + utils.afterFee(consts.defaultPot(), consts.SERVICE_FEE_IN_THOUSANDTHS),  // credit
             "lowestBid is not deposited into winner's credit"); // winner.credit
         assert.isOk(winner[3], "a non member was chosen when there were no bids");
     }));

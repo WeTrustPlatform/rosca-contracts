@@ -5,6 +5,7 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let consts = require('./utils/consts')
+let rosca
 
 contract('ROSCA addMember Unit Test', function(accounts) {
     // Parameters for new ROSCA creation
@@ -12,16 +13,16 @@ contract('ROSCA addMember Unit Test', function(accounts) {
       consts.setMemberList(accounts)
     })
 
-    it("throws when adding an existing member", co(function* () {
-        let rosca = yield utils.createEthROSCA();
+    beforeEach(co(function* () {
+        rosca = yield utils.createEthROSCA();
+    }))
 
+    it("throws when adding an existing member", co(function* () {
         yield utils.assertThrows(rosca.addMember(accounts[1]),
             "adding existing member succeed when it should have thrown");
     }));
 
     it("checks member get added properly", co(function* () {
-        let rosca = yield utils.createEthROSCA();
-
         // try contributing from a non-member to make sure membership hasn't been established
         yield utils.assertThrows(rosca.contribute({from: accounts[4], value: consts.CONTRIBUTION_SIZE}),
             "expected calling contribute from non-member to throw");

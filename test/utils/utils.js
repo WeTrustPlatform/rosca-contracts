@@ -39,7 +39,7 @@ module.exports = {
     optRoundPeriodInSecs = optRoundPeriodInSecs || consts.ROUND_PERIOD_IN_SECS
     optcontributionSize = optcontributionSize || consts.CONTRIBUTION_SIZE
     optStartTimeDelay = optStartTimeDelay || consts.START_TIME_DELAY
-    optMemberList = optMemberList || consts.MEMBER_LIST()
+    optMemberList = optMemberList || consts.memberList()
     optServicefeeInThousandths = optServicefeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS
 
     this.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
@@ -86,6 +86,29 @@ module.exports = {
       // This is an ETH contract. Only need to call contribute.
       return rosca.contribute({from: from, value: value});
     });
+  },
+
+  createETHandERC20Roscas: co(function* (accounts) {
+    let ethRosca = yield this.createEthROSCA();
+    let erc20Rosca = yield this.createERC20ROSCA(accounts);
+    return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
+  }),
+
+  withdraw: function(rosca, from) {
+    return rosca.withdraw({from: from});
+  },
+
+  startRound: function(rosca) {
+    return rosca.startRound();
+  },
+
+  bid: function(rosca, from, amount) {
+    return rosca.bid(amount, {from: from});
+  },
+
+  userCredit: function* (rosca, user) {
+    let userInfo = yield rosca.members.call(user)
+    return userInfo[0] // credit is in 0 position of the returned value
   },
 
   getBalance: co(function* (account, tokenContract) {

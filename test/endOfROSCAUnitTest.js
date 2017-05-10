@@ -5,18 +5,18 @@ let co = require("co").wrap;
 let Promise = require("bluebird");
 let utils = require("./utils/utils.js");
 let consts = require('./utils/consts')
+let roscas
+let rosca
 
 contract('end of ROSCA unit test', function(accounts) {
     before(function () {
       consts.setMemberList(accounts)
     })
-    // Note accounts[0] is the foreperson, deploying the contract.
 
-    let createETHandERC20Roscas = co(function* () {
-      let ethRosca = yield utils.createEthROSCA();
-      let erc20Rosca = yield utils.createERC20ROSCA(accounts);
-      return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
-    });
+    beforeEach(co(function* () {
+      roscas = yield utils.createETHandERC20Roscas(accounts);
+      rosca = yield utils.createEthROSCA()
+    }))
 
     // Runs the ROSCA, contributing funds as required, but never withdrawing - so that
     // the contract ends in a surplus.
@@ -24,23 +24,22 @@ contract('end of ROSCA unit test', function(accounts) {
       // Get to the start of the ROSCA.
       utils.increaseTime(consts.START_TIME_DELAY );
 
-      for (let round = 0; round < consts.MEMBER_COUNT(); round++) {
+      for (let round = 0; round < consts.memberCount(); round++) {
         // In each round, have each participant contribute a bit more than
         // they need to. We do that so that money is left over in the contract
         // at the end.
         yield rosca.startRound({from: accounts[0]});
 
-        for (let participant = 0; participant < consts.MEMBER_COUNT(); participant++) {
+        for (let participant = 0; participant < consts.memberCount(); participant++) {
           yield utils.contribute(rosca, accounts[participant], consts.CONTRIBUTION_SIZE);
         }
-        yield rosca.bid(consts.CONTRIBUTION_SIZE * consts.MEMBER_COUNT(), {from: accounts[round]});
+        yield rosca.bid(consts.CONTRIBUTION_SIZE * consts.memberCount(), {from: accounts[round]});
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
       }
     }
 
     it("checks if endOfROSCARetrieve{Surplus,Fees} retrieve the funds when called in this order + check event",
         co(function* () {
-      let roscas = yield createETHandERC20Roscas();
       for (let rosca of [roscas.ethRosca, roscas.erc20Rosca]) {
         let tokenContract = yield rosca.tokenContract.call();
         yield* runFullRoscaNoWithdraw(rosca);
@@ -76,7 +75,6 @@ contract('end of ROSCA unit test', function(accounts) {
     }));
 
     it("checks if endOfROSCARetrieve{Fees, Surplus} retrieve the funds when called in this order", co(function* () {
-      let rosca = yield utils.createEthROSCA();
       yield* runFullRoscaNoWithdraw(rosca);
       yield rosca.startRound();  // cleans up the last round
       // foreperson must wait another round before being able to get the surplus
@@ -104,7 +102,6 @@ contract('end of ROSCA unit test', function(accounts) {
 
     it("validates endOfROSCARetrieve{Surplus, Fee} throw if called before clearing out the final round",
         co(function* () {
-      let rosca = yield utils.createEthROSCA();
       yield* runFullRoscaNoWithdraw(rosca);
       // we do not call yield rosca.startRound() here
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
@@ -119,7 +116,6 @@ contract('end of ROSCA unit test', function(accounts) {
 
     it("validates endOfROSCARetrieve{Surplus,Fee} throws if called not by the foreperson",
         co(function* () {
-      let rosca = yield utils.createEthROSCA();
       yield* runFullRoscaNoWithdraw(rosca);
       yield rosca.startRound();
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
@@ -136,7 +132,6 @@ contract('end of ROSCA unit test', function(accounts) {
     }));
 
     it("validates endOfROSCARetrieve{Surplus, Fee} throw if called too early", co(function* () {
-      let rosca = yield utils.createEthROSCA();
       yield* runFullRoscaNoWithdraw(rosca);
 
       // startRound() has not been called yet.
