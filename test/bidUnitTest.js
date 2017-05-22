@@ -5,11 +5,10 @@ let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
-
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
-let rosca;
+let roscaHelper;
 
 contract('ROSCA bid Unit Test', function(accounts) {
     before(function() {
@@ -17,34 +16,34 @@ contract('ROSCA bid Unit Test', function(accounts) {
     });
 
     beforeEach(co(function* () {
-      rosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
+      roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
     }));
 
     it("Throws when calling bid with valid parameters before ROSCA starts", co(function* () {
-        yield utils.assertThrows(rosca.bid(1, consts.defaultPot()),
+        yield utils.assertThrows(roscaHelper.bid(1, consts.defaultPot()),
             "expected calling bid in round 0 to throw");
     }));
 
     it("Throws when calling bid without being in good Standing", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield rosca.startRound();
+        yield roscaHelper.startRound();
 
-        yield utils.assertThrows(rosca.bid(1, consts.defaultPot()),
+        yield utils.assertThrows(roscaHelper.bid(1, consts.defaultPot()),
             "expected calling bid before contributing to throw");
     }));
 
     it("Throws Placing bid less than 65% of the Pot", co(function* () {
-        const MIN_DISTRIBUTION_PERCENT = yield rosca.MIN_DISTRIBUTION_PERCENT();
+        const MIN_DISTRIBUTION_PERCENT = yield roscaHelper.MIN_DISTRIBUTION_PERCENT(); // eslint-disable-line
 
         const BID_TO_PLACE = consts.defaultPot() * (MIN_DISTRIBUTION_PERCENT / 100 * 0.99);
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
-            rosca.contribute(2, consts.CONTRIBUTION_SIZE),
+            roscaHelper.startRound(),
+            roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
-        yield utils.assertThrows(rosca.bid(2, BID_TO_PLACE),
+        yield utils.assertThrows(roscaHelper.bid(2, BID_TO_PLACE),
             "expected placing bid less than MIN_DISTRIBUTION_PERCENT threshold to throw");
     }));
 
@@ -53,11 +52,11 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
-            rosca.contribute(2, consts.CONTRIBUTION_SIZE),
+            roscaHelper.startRound(),
+            roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
-        let result = yield rosca.bid(2, BID_TO_PLACE);
+        let result = yield roscaHelper.bid(2, BID_TO_PLACE);
 
         let log = result.logs[0];
 
@@ -65,9 +64,9 @@ contract('ROSCA bid Unit Test', function(accounts) {
         assert.equal(log.args.winnerAddress, accounts[2], "Log doesn't show proper winnerAddress");
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        yield roscaHelper.startRound();
 
-        let credit = yield rosca.userCredit(2);
+        let credit = yield roscaHelper.userCredit(2);
         let expectedCredit = consts.CONTRIBUTION_SIZE + utils.afterFee(BID_TO_PLACE, consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         assert.equal(credit, expectedCredit, "bid placed didn't affect winner's credit");
@@ -76,16 +75,16 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws when placing a valid bid from paid member", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
+            roscaHelper.startRound(),
 
-            rosca.contribute(2, consts.CONTRIBUTION_SIZE),
+            roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
-        yield rosca.bid(2, consts.defaultPot());
+        yield roscaHelper.bid(2, consts.defaultPot());
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        yield roscaHelper.startRound();
 
-        yield utils.assertThrows(rosca.bid(2, consts.defaultPot()),
+        yield utils.assertThrows(roscaHelper.bid(2, consts.defaultPot()),
             "calling bid from paid member succeed, didn't throw");
     }));
 
@@ -93,25 +92,26 @@ contract('ROSCA bid Unit Test', function(accounts) {
         const roscaTest = yield ROSCATest.deployed();
 
         const MAX_NEXT_BID_RATIO = yield roscaTest.MAX_NEXT_BID_RATIO.call();
-        const NOT_LOW_ENOUGH_BID_TO_PLACE = consts.defaultPot() / 100 * MAX_NEXT_BID_RATIO + 100;
+        const NOT_LOW_ENOUGH_BID_TO_PLACE = consts.defaultPot() / 100 * MAX_NEXT_BID_RATIO + 1000;
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
-            rosca.contribute(1, consts.CONTRIBUTION_SIZE),
-            rosca.contribute(3, consts.CONTRIBUTION_SIZE),
+            roscaHelper.startRound(),
+            roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
+            roscaHelper.contribute(3, consts.CONTRIBUTION_SIZE),
         ]);
 
         yield Promise.all([
-            rosca.bid(1, consts.defaultPot()),
-            rosca.bid(3, NOT_LOW_ENOUGH_BID_TO_PLACE),
+            roscaHelper.bid(1, consts.defaultPot()),
+            roscaHelper.bid(3, NOT_LOW_ENOUGH_BID_TO_PLACE),
         ]);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        yield roscaHelper.startRound();
 
-        let p1Credit = yield rosca.userCredit(1);
-        let expectedCredit = consts.CONTRIBUTION_SIZE + utils.afterFee(consts.defaultPot(), consts.SERVICE_FEE_IN_THOUSANDTHS);
+        let p1Credit = yield roscaHelper.userCredit(1);
+        let expectedCredit = consts.CONTRIBUTION_SIZE +
+          utils.afterFee(consts.defaultPot(), consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         assert.equal(p1Credit, expectedCredit,
             "original bidder should have won due to insufficient gap in the second bid");
@@ -122,19 +122,19 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            rosca.startRound(),
-            rosca.contribute(1, consts.CONTRIBUTION_SIZE),
-            rosca.contribute(3, consts.CONTRIBUTION_SIZE),
+            roscaHelper.startRound(),
+            roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
+            roscaHelper.contribute(3, consts.CONTRIBUTION_SIZE),
         ]);
         yield Promise.all([
-            rosca.bid(3, LOWER_BID),
-            rosca.bid(1, consts.defaultPot()),
+            roscaHelper.bid(3, LOWER_BID),
+            roscaHelper.bid(1, consts.defaultPot()),
         ]);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
-        yield rosca.startRound();
+        yield roscaHelper.startRound();
 
-        let p3Credit = yield rosca.userCredit(3);
+        let p3Credit = yield roscaHelper.userCredit(3);
         let expectedCredit = consts.CONTRIBUTION_SIZE + utils.afterFee(LOWER_BID, consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         assert.equal(p3Credit, expectedCredit, "original lower bid should have won");

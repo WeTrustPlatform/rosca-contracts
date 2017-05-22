@@ -26,6 +26,7 @@
       "ROSCA": false,
       "ROSCATest": false,
       "TestReEntryAttack": false,
-      "web3": false
+      "web3": false,
+      "artifacts": false
   },
 }

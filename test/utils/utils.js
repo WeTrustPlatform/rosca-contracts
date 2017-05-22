@@ -7,8 +7,6 @@ let Promise = require("bluebird");
 let ROSCATest = artifacts.require('ROSCATest.sol'); // eslint-disable-line
 let ExampleToken = artifacts.require('test/ExampleToken.sol'); // eslint-disable-line
 let ERC20TokenInterface = artifacts.require('deps/ERC20TokenInterface.sol'); // eslint-disable-line
-let rosca; // eslint-disable-line
-let accounts;
 
 // we need this becaues test env is different than script env
 let myWeb3 = (typeof web3 === undefined ? undefined : web3);
@@ -21,7 +19,7 @@ module.exports = {
   },
 
   afterFee: function(amount, optServiceFeeInThousandths) {
-    let serviceFeeInThousandths = optServiceFeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS
+    let serviceFeeInThousandths = optServiceFeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS;
     return amount / 1000 * (1000 - serviceFeeInThousandths);
   },
 
@@ -39,11 +37,11 @@ module.exports = {
 
   createROSCA: function(ERC20Address, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
                         optMemberList, optServicefeeInThousandths) {
-    optRoundPeriodInSecs = optRoundPeriodInSecs || consts.ROUND_PERIOD_IN_SECS
-    optcontributionSize = optcontributionSize || consts.CONTRIBUTION_SIZE
-    optStartTimeDelay = optStartTimeDelay || consts.START_TIME_DELAY
-    optMemberList = optMemberList || consts.memberList()
-    optServicefeeInThousandths = optServicefeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS
+    optRoundPeriodInSecs = optRoundPeriodInSecs || consts.ROUND_PERIOD_IN_SECS;
+    optcontributionSize = optcontributionSize || consts.CONTRIBUTION_SIZE;
+    optStartTimeDelay = optStartTimeDelay || consts.START_TIME_DELAY;
+    optMemberList = optMemberList || consts.memberList();
+    optServicefeeInThousandths = optServicefeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS;
 
     this.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
@@ -57,13 +55,13 @@ module.exports = {
 
   createEthROSCA: function(optMemberList, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
                             optServicefeeInThousandths) {
-    return this.createROSCA(0 /* use ETH */ , optRoundPeriodInSecs, optcontributionSize,
+    return this.createROSCA(0 /* use ETH */, optRoundPeriodInSecs, optcontributionSize,
                             optStartTimeDelay, optMemberList, optServicefeeInThousandths);
   },
 
   createERC20ROSCA: co(function* (optAccountsToInjectTo, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
                                  optMemberList, optServicefeeInThousandths) {
-    let accountsToInjectTo = optAccountsToInjectTo || consts.memberList()
+    let accountsToInjectTo = optAccountsToInjectTo || consts.memberList();
     let exampleToken = yield ExampleToken.new(accountsToInjectTo || []);
     return this.createROSCA(exampleToken.address, optRoundPeriodInSecs,  // eslint-disable-line no-invalid-this
                               optcontributionSize, optStartTimeDelay, optMemberList,
@@ -71,14 +69,15 @@ module.exports = {
   }),
 
   createETHandERC20Roscas: co(function* (accounts) {
-    let ethRosca = yield this.createEthROSCA();
-    let erc20Rosca = yield this.createERC20ROSCA(accounts);
+    let ethRosca = yield this.createEthROSCA(); // eslint-disable-line
+    let erc20Rosca = yield this.createERC20ROSCA(accounts); //eslint-disable-line
     return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
   }),
 
   getBalance: co(function* (userIndexOrAddress, optTokenContract) {
-    let account = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
-    let tokenContract = optTokenContract || ZERO_ADDRESS
+    let account = (typeof userIndexOrAddress === 'number') ?
+      this.accounts[userIndexOrAddress] : userIndexOrAddress; // eslint-disable-line
+    let tokenContract = optTokenContract || ZERO_ADDRESS;
 
     if (!tokenContract || tokenContract === ZERO_ADDRESS) {
       return web3.eth.getBalance(account).toNumber();

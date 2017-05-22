@@ -1,6 +1,5 @@
 "use strict";
 
-let Promise = require("bluebird");
 let co = require("co").wrap;
 let assert = require('chai').assert;
 let utils = require("../utils/utils.js");
@@ -25,7 +24,8 @@ contract('ROSCA reentry attack test', function(accounts) {
     let blockTime = latestBlock.timestamp;
     let rosca = yield ROSCATest.new(
         0  /* use ETH */,
-        consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY, [attackContract.address],
+        consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
+        blockTime + consts.START_TIME_DELAY, [attackContract.address],
         consts.SERVICE_FEE_IN_THOUSANDTHS, {from: accounts[0]});
 
     utils.increaseTime(consts.START_TIME_DELAY);

@@ -5,10 +5,10 @@ let assert = require('chai').assert;
 let utils = require("./utils/utils.js");
 let ROSCATest = artifacts.require('ROSCATest.sol');
 let consts = require('./utils/consts');
-let ROSCAHelper = require('./utils/roscaHelper')
+let ROSCAHelper = require('./utils/roscaHelper');
 
-let ethRosca;
-let erc20Rosca;
+let ethRoscaHelper;
+let erc20RoscaHelper;
 
 contract('Escape Hatch unit test', function(accounts) {
   before(function() {
@@ -16,8 +16,8 @@ contract('Escape Hatch unit test', function(accounts) {
   });
 
   beforeEach(co(function* () {
-    ethRosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA()))
-    erc20Rosca = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)))
+    ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
+    erc20RoscaHelper = new ROSCAHelper(accounts, (yield utils.createERC20ROSCA(accounts)));
   }));
 
   let ESCAPE_HATCH_ENABLER;
@@ -42,59 +42,59 @@ contract('Escape Hatch unit test', function(accounts) {
     // way of setting this var in the first test.
     ESCAPE_HATCH_ENABLER = yield (yield ROSCATest.deployed()).ESCAPE_HATCH_ENABLER.call();
 
-    yield* runRoscUpToAPoint(ethRosca);
-    yield utils.assertThrows(ethRosca.enableEscapeHatch(0));  // foreperson
-    yield utils.assertThrows(ethRosca.enableEscapeHatch(3));  // member
+    yield* runRoscUpToAPoint(ethRoscaHelper);
+    yield utils.assertThrows(ethRoscaHelper.enableEscapeHatch(0));  // foreperson
+    yield utils.assertThrows(ethRoscaHelper.enableEscapeHatch(3));  // member
     // Doesn't throw.
-    yield ethRosca.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // member
+    yield ethRoscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // member
   }));
 
   it("checks that only foreperson can activate the escape hatch and that too only when enabled", co(function* () {
-    yield* runRoscUpToAPoint(ethRosca);
-    yield utils.assertThrows(ethRosca.activateEscapeHatch(3));  // member
-    yield utils.assertThrows(ethRosca.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
+    yield* runRoscUpToAPoint(ethRoscaHelper);
+    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(3));  // member
+    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
     // foreperson can't activate either, as escape hatch isn't enabled.
-    yield utils.assertThrows(ethRosca.activateEscapeHatch(0));
+    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(0));
 
     // Enable. Now only the foreperson should be able to activate.
-    yield ethRosca.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
-    yield utils.assertThrows(ethRosca.activateEscapeHatch(3));  // member
-    yield utils.assertThrows(ethRosca.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
-    yield ethRosca.activateEscapeHatch(0);  // does not throw
+    yield ethRoscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
+    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(3));  // member
+    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
+    yield ethRoscaHelper.activateEscapeHatch(0);  // does not throw
   }));
 
   it("checks that when escape hatch is enabled but not activated, contribute and withdraw still work", co(function* () {
-    yield* runRoscUpToAPoint(ethRosca);
-    yield ethRosca.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
+    yield* runRoscUpToAPoint(ethRoscaHelper);
+    yield ethRoscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
 
-    yield ethRosca.contribute(1, consts.CONTRIBUTION_SIZE * 7);
-    yield ethRosca.withdraw(1);
+    yield ethRoscaHelper.contribute(1, consts.CONTRIBUTION_SIZE * 7);
+    yield ethRoscaHelper.withdraw(1);
   }));
 
   it("checks that once escape hatch is activated, contribute and withdraw throw", co(function* () {
-    yield* runRoscUpToAPoint(ethRosca);
-    yield ethRosca.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
-    yield ethRosca.activateEscapeHatch(0);
+    yield* runRoscUpToAPoint(ethRoscaHelper);
+    yield ethRoscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
+    yield ethRoscaHelper.activateEscapeHatch(0);
 
-    yield utils.assertThrows(ethRosca.contribute(1, consts.CONTRIBUTION_SIZE * 7));
-    yield utils.assertThrows(ethRosca.withdraw(1));
+    yield utils.assertThrows(ethRoscaHelper.contribute(1, consts.CONTRIBUTION_SIZE * 7));
+    yield utils.assertThrows(ethRoscaHelper.withdraw(1));
   }));
 
   it("checks that emergencyWithdrawal can only be called when escape hatch is enabled and active, and that " +
      "too only by foreperson", co(function* () {
-    for (let rosca of [ethRosca, erc20Rosca]) {
-      let tokenContract = yield rosca.tokenContract();
-      yield* runRoscUpToAPoint(rosca);
-      utils.assertThrows(rosca.emergencyWithdrawal(0));  // not enabled and active
-      yield rosca.enableEscapeHatch(ESCAPE_HATCH_ENABLER);
-      utils.assertThrows(rosca.emergencyWithdrawal(0));  // not active
-      yield rosca.activateEscapeHatch(0);
-      utils.assertThrows(rosca.emergencyWithdrawal(ESCAPE_HATCH_ENABLER));  // not by foreperson
-      utils.assertThrows(rosca.emergencyWithdrawal(1));  // not by foreperson
+    for (let roscaHelper of [ethRoscaHelper, erc20RoscaHelper]) {
+      let tokenContract = yield roscaHelper.tokenContract();
+      yield* runRoscUpToAPoint(roscaHelper);
+      utils.assertThrows(roscaHelper.emergencyWithdrawal(0));  // not enabled and active
+      yield roscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);
+      utils.assertThrows(roscaHelper.emergencyWithdrawal(0));  // not active
+      yield roscaHelper.activateEscapeHatch(0);
+      utils.assertThrows(roscaHelper.emergencyWithdrawal(ESCAPE_HATCH_ENABLER));  // not by foreperson
+      utils.assertThrows(roscaHelper.emergencyWithdrawal(1));  // not by foreperson
 
-      let forepersonBalanceBefore = yield rosca.getBalance(0, tokenContract);
-      yield rosca.emergencyWithdrawal(0);  // not by foreperson
-      let forepersonBalanceAfter = yield rosca.getBalance(0, tokenContract);
+      let forepersonBalanceBefore = yield roscaHelper.getBalance(0, tokenContract);
+      yield roscaHelper.emergencyWithdrawal(0);  // not by foreperson
+      let forepersonBalanceAfter = yield roscaHelper.getBalance(0, tokenContract);
       assert.isAbove(forepersonBalanceAfter, forepersonBalanceBefore);
     }
   }));
