@@ -90,11 +90,11 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         "win when only they are eligible", co(function* () {
         // 3 member roscaHelper, where p1 is the only one in goodStanding and will win the Pot in round 1
         // in 2nd round check that one of the other two users (delinquents) get the pot
-        let memberList = [accounts[1], accounts[2]];
+        let memberList = [accounts[0], accounts[1], accounts[2]];
 
         let rosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA(memberList)));
 
-        let pot = (memberList.length + 1) * consts.CONTRIBUTION_SIZE;
+        let pot = memberList.length * consts.CONTRIBUTION_SIZE;
         utils.increaseTime(consts.START_TIME_DELAY);
         yield rosca.startRound();
         yield rosca.contribute(1, consts.CONTRIBUTION_SIZE);
@@ -114,7 +114,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         let winner = yield rosca.getUser(winnerAddress);
 
         assert.include(possibleWinner, winnerAddress, "Non eligible member won the pot");
-        assert.equal(winner[0].toString(), utils.afterFee((memberList.length + 1) * consts.CONTRIBUTION_SIZE,
+        assert.equal(winner[0].toString(), utils.afterFee(memberList.length * consts.CONTRIBUTION_SIZE,
             consts.SERVICE_FEE_IN_THOUSANDTHS)); // winner.credit
         assert.isOk(winner[3], "a non member was chosen when there were no bids");
     }));

@@ -224,7 +224,8 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assert.equal(contract.credits[2], expectedCreditToDate(2, 2));
     assert.equal(contract.credits[3], consts.CONTRIBUTION_SIZE); // not in good standing
     // TD == OLD_TD + (consts.defaultPot() - POT_WON) * NET_REWARD_RATIO / memberCount
-    let expectedTotalDiscounts = (INDIVIDUAL_DISCOUNTS_FOR_ROUND[0] + INDIVIDUAL_DISCOUNTS_FOR_ROUND[1]) * consts.CONTRIBUTION_SIZE;
+    let expectedTotalDiscounts = (INDIVIDUAL_DISCOUNTS_FOR_ROUND[0] + INDIVIDUAL_DISCOUNTS_FOR_ROUND[1]) *
+      consts.CONTRIBUTION_SIZE;
     assertCloseTo(contract.totalDiscounts, expectedTotalDiscounts);
 
     // Contributions were 0.8C + 1C - totalDiscount from last Round .

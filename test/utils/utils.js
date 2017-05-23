@@ -35,8 +35,9 @@ module.exports = {
     });
   },
 
-  createROSCA: function(ERC20Address, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+  createROSCA: function(ERC20Address, optRoscaType, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
                         optMemberList, optServicefeeInThousandths) {
+    optRoscaType = optRoscaType || consts.ROSCA_TYPE;
     optRoundPeriodInSecs = optRoundPeriodInSecs || consts.ROUND_PERIOD_IN_SECS;
     optcontributionSize = optcontributionSize || consts.CONTRIBUTION_SIZE;
     optStartTimeDelay = optStartTimeDelay || consts.START_TIME_DELAY;
@@ -48,22 +49,22 @@ module.exports = {
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
     return ROSCATest.new(
-        ERC20Address,
+        ERC20Address, optRoscaType,
         optRoundPeriodInSecs, optcontributionSize, blockTime + optStartTimeDelay, optMemberList,
         optServicefeeInThousandths);
   },
 
-  createEthROSCA: function(optMemberList, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+  createEthROSCA: function(optMemberList, optRoscaType, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
                             optServicefeeInThousandths) {
-    return this.createROSCA(0 /* use ETH */, optRoundPeriodInSecs, optcontributionSize,
+    return this.createROSCA(0 /* use ETH */, optRoscaType, optRoundPeriodInSecs, optcontributionSize,
                             optStartTimeDelay, optMemberList, optServicefeeInThousandths);
   },
 
-  createERC20ROSCA: co(function* (optAccountsToInjectTo, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+  createERC20ROSCA: co(function* (optAccountsToInjectTo, optRoscaType, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
                                  optMemberList, optServicefeeInThousandths) {
     let accountsToInjectTo = optAccountsToInjectTo || consts.memberList();
     let exampleToken = yield ExampleToken.new(accountsToInjectTo || []);
-    return this.createROSCA(exampleToken.address, optRoundPeriodInSecs,  // eslint-disable-line no-invalid-this
+    return this.createROSCA(exampleToken.address, optRoscaType, optRoundPeriodInSecs,  // eslint-disable-line no-invalid-this
                               optcontributionSize, optStartTimeDelay, optMemberList,
                               optServicefeeInThousandths);
   }),

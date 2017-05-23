@@ -18,10 +18,6 @@ contract('fees unit test', function(accounts) {
     roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
   }));
 
-  // Note accounts[0] is the foreperson, deploying the contract.
-  const MEMBER_LIST = accounts.slice(1, 2);  // a
-  // ccounts[0] is also participant, as a foreperson
-
   function* getFeesInContractAfterLastRound(rosca) {
     // Wait another round.
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
@@ -59,7 +55,6 @@ contract('fees unit test', function(accounts) {
 
     let withdrewAmount = yield roscaHelper.withdrawAndGetWithdrewAmount(0);
 
-    // roscaHelper.withdrawal would be (0.9 * 2C) * 0.99(fee) + (0.1 * 2 / 2)(totalDiscounts) * 0.99(fee)
     let expectedWithrewAmount = utils.afterFee(BID_TO_PLACE) +
       utils.afterFee(INDIVIDUAL_DISCOUNT);
     assert.equal(withdrewAmount, expectedWithrewAmount, "fees taken out doesn't match theoretical calculations");
@@ -115,7 +110,7 @@ contract('fees unit test', function(accounts) {
   it('does not charge overcontributions that do not get used in the ROSCA and do not get withdrawn', co(function* () {
     const BID_TO_PLACE = 0.9 * consts.defaultPot();
     const INDIVIDUAL_DISCOUNT = (consts.defaultPot() - BID_TO_PLACE) / consts.memberCount();
-    // In this test, accounts[0] roscaHelper.contributes 1.5C in round 1, and another 1C in round 2.
+    // In this test, accounts[0] contributes 1.5C in round 1, and another 1C in round 2.
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
       roscaHelper.startRound(),
@@ -192,7 +187,7 @@ contract('fees unit test', function(accounts) {
   it('does not charge fees from contributions not covered because of delinquencies', co(function* () {
     const BID_TO_PLACE = 0.9 * consts.defaultPot();
     const INDIVIDUAL_DISCOUNT = (consts.defaultPot() - BID_TO_PLACE) / consts.memberCount();
-    // In this test, accounts[0] roscaHelper.contributes 0.5C in round 1, and another 1C in round 2.
+    // In this test, accounts[0] contributes 0.5C in round 1, and another 1C in round 2.
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
       roscaHelper.startRound(),
@@ -213,10 +208,11 @@ contract('fees unit test', function(accounts) {
     yield roscaHelper.startRound();
 
     let fees = yield getFeesInContractAfterLastRound(roscaHelper);
-    let expectedDiscount = INDIVIDUAL_DISCOUNT / MEMBER_LIST.length;
-    // console.log(expectedDiscount);
+
+    let expectedDiscount = INDIVIDUAL_DISCOUNT;
+
     let expectedFees = expectedFeesFrom(consts.CONTRIBUTION_SIZE * (2 + 1.5) + expectedDiscount);
-    assert.closeTo(Math.abs(1 - fees / expectedFees), 0, 0.01, "actual: " + fees + ",expected: " + expectedFees);
+    assert.closeTo(Math.abs(1 - fees / expectedFees), 0, 0.01, "actual: " + fees + ", expected: " + expectedFees);
   }));
 
   it('checks if fees are applied to rolled over credits', co(function* () {

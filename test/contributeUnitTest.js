@@ -35,7 +35,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("throws when contributing after end of Rosca", co(function* () {
-        for (let i = 0; i < consts.memberList().length + 2; i++) {
+        for (let i = 0; i < consts.memberList().length + 1; i++) {
             utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
             yield ethRoscaHelper.startRound();
         }
@@ -71,7 +71,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
 
     it("checks delinquent winner who contributes the right amount no longer considered delinquent",
       co(function* () {
-        let members = [accounts[1], accounts[2]];
+        let members = [accounts[0], accounts[1], accounts[2]];
         let roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)));
 
         utils.increaseTime(consts.START_TIME_DELAY);

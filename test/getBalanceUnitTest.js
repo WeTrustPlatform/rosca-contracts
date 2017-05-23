@@ -80,8 +80,8 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
     it("checks that getParticipantBalance returns negative value for delinquents " +
        "(who already won the pot)", co(function* () {
         // 3 member rosca, p1 contribute 5 * consts.CONTRIBUTION_SIZE and win round 1
-        let memberList = [accounts[1], accounts[2]];
-        let pot = (memberList.length + 1) * consts.CONTRIBUTION_SIZE;
+        let memberList = [accounts[0], accounts[1], accounts[2]];
+        let pot = memberList.length * consts.CONTRIBUTION_SIZE;
         let roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(memberList)));
 
         utils.increaseTime(consts.START_TIME_DELAY);

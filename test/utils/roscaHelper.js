@@ -128,6 +128,39 @@ roscaHelper.prototype.tokenContract = function(optRosca) {
   return rosca.tokenContract.call();
 };
 
+roscaHelper.prototype.getParticipantInfo = function(userIndexOrAddress, optRosca) {
+  let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
+  let rosca = optRosca || this.roscaContract;
+
+  return rosca.members.call(user);
+};
+
+roscaHelper.prototype.getContractStatus = co(function* (optRosca) {
+  let rosca = optRosca || this.roscaContract; // eslint-disable-line
+
+  let memberInfos = [];
+  for (let i = 0; i < consts.memberCount(); i++) {
+    memberInfos.push(yield this.userCredit(i)); // eslint-disable-line
+  }
+
+  let results = yield Promise.all([
+    rosca.totalDiscounts.call(),
+    rosca.currentRound.call(),
+    rosca.totalFees.call(),
+  ]);
+
+  let balance = yield rosca.getBalance(rosca.address);
+
+  return {
+    credits: [
+      memberInfos[0], memberInfos[1], memberInfos[2], memberInfos[3]],
+    totalDiscounts: results[0].toNumber(),
+    currentRound: results[1].toNumber(),
+    balance: balance,
+    totalFees: results[2].toNumber(),
+  };
+});
+
 roscaHelper.prototype.withdrawAndGetWithdrewAmount = function* (userIndexOrAddress, optRosca) {
   let user = (typeof userIndexOrAddress === 'number') ? this.accounts[userIndexOrAddress] : userIndexOrAddress;
   let rosca = optRosca || this.roscaContract;

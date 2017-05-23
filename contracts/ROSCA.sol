@@ -17,7 +17,7 @@ import "./deps/ERC20TokenInterface.sol";
  */
 contract ROSCA {
 
-  uint16 public constant CONTRACT_VERSION  = 2;
+  uint16 public constant CONTRACT_VERSION  = 3;
   ////////////
   // CONSTANTS
   ////////////
@@ -77,6 +77,12 @@ contract ROSCA {
   ERC20TokenInterface public tokenContract;  // public - allow easy verification of token contract.
 
   // ROSCA state
+  // Currently, we support three different types of ROSCA
+  // 0 : ROSCA where lowest bidder wins (Bidding ROSCA)
+  // 1 : ROSCA where winners are chosen at random (random Selection ROSCA)
+  // 2 : ROSCA where winners are selected through a ordered list (pre-determined ROSCA)
+  enum typesOfROSCA { BIDDING_ROSCA, RANDOM_SELECTION_ROSCA, PRE_DETERMINED_ROSCA }
+  typesOfROSCA roscaType;
   bool internal endOfROSCA = false;
   bool internal forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
@@ -156,6 +162,13 @@ contract ROSCA {
     _;
   }
 
+  modifier onlyBIDDING_ROSCA {
+    if (roscaType != typesOfROSCA.BIDDING_ROSCA) {
+      throw;
+    }
+    _;
+  }
+
   modifier onlyFromEscapeHatchEnabler {
     if (msg.sender != ESCAPE_HATCH_ENABLER) {
       throw;
@@ -169,7 +182,9 @@ contract ROSCA {
 
   /**
     * @dev Creates a new ROSCA and initializes the necessary variables. ROSCA starts after startTime.
-    * Creator of the contract becomes foreperson and a participant.
+    * Creator of the contract becomes foreperson but not a participant (unless creator's address
+    *   is included in members_ parameter).
+    *
     *
     * If erc20TokenContract is 0, ETH is taken to be the currency of this ROSCA. Otherwise, this
     * contract assumes `erc20tokenContract` specifies an ERC20-compliant token contract.
@@ -178,6 +193,7 @@ contract ROSCA {
     */
   function ROSCA(
       ERC20TokenInterface erc20tokenContract,  // pass 0 to use ETH
+      typesOfROSCA roscaType_,
       uint256 roundPeriodInSecs_,
       uint128 contributionSize_,
       uint256 startTime_,
@@ -197,11 +213,12 @@ contract ROSCA {
     if (serviceFeeInThousandths_ > MAX_FEE_IN_THOUSANDTHS) {
       throw;
     }
+
+    roscaType = roscaType_;
     tokenContract = erc20tokenContract;
     serviceFeeInThousandths = serviceFeeInThousandths_;
 
     foreperson = msg.sender;
-    addMember(msg.sender);
 
     for (uint16 i = 0; i < members_.length; i++) {
       addMember(members_[i]);
@@ -246,12 +263,17 @@ contract ROSCA {
     uint256 winnerIndex;
     bool winnerSelectedThroughBid = (winnerAddress != 0);
     uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
+    // for pre-ordered ROSCA, pick the next person in the list (delinquent or not)
+    if (roscaType == typesOfROSCA.PRE_DETERMINED_ROSCA) {
+      winnerAddress = membersAddresses[currentRound - 1];
+    }
     if (winnerAddress == 0) {
       // There was no bid in this round. Find an unpaid address for this epoch.
       // Give priority to members in good standing (not delinquent).
       // Note this randomness does not require high security, that's why we feel ok with using the block's timestamp.
       // Everyone will be paid out eventually.
       uint256 semi_random = now % numUnpaidParticipants;
+
       for (uint16 i = 0; i < numUnpaidParticipants; i++) {
         uint256 index = (semi_random + i) % numUnpaidParticipants;
         address candidate = membersAddresses[index];
@@ -278,7 +300,9 @@ contract ROSCA {
     // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
     // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
     // next unpaid member).
-    swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
+    if (roscaType != typesOfROSCA.PRE_DETERMINED_ROSCA) {
+      swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
+    }
 
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
@@ -344,6 +368,7 @@ contract ROSCA {
     if (!isEthRosca && msg.value > 0) {  // token ROSCAs should not accept ETH
       throw;
     }
+
     uint256 value = (isEthRosca ? msg.value : tokenContract.allowance(msg.sender, address(this)));
     if (value == 0) {
       throw;
@@ -389,7 +414,7 @@ contract ROSCA {
    *   plus any past earned discounts are together greater than required contributions).
    * + New bid is lower than the lowest bid so far.
    */
-  function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive external {
+  function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive onlyBIDDING_ROSCA external {
     if (members[msg.sender].paid  ||
         currentRound == 0 ||  // ROSCA hasn't started yet
         // participant not in good standing

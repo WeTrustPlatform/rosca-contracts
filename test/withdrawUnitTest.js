@@ -203,7 +203,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             co(function* () {
          // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
          // We check that the winner cannot withdraw their money in the next round, but once they pay up, they can.
-         let members = [accounts[1]];
+         let members = [accounts[0], accounts[1]];
          let ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)));
 
          utils.increaseTime(consts.START_TIME_DELAY);
@@ -230,7 +230,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         // In this 2-person rosca test, both p0 and p1 are delinquent and pay only 0.5C each in the first round.
         // We check that the winner cannot withdraw their money until rosca has ended.
         // After rosca ended, we check that the winner can only withdraw the amount he contributed.
-        let members = [accounts[1]];
+        let members = [accounts[0], accounts[1]];
         let ethRoscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA(members)));
 
         utils.increaseTime(consts.START_TIME_DELAY);

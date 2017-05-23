@@ -23,7 +23,8 @@ contract('ROSCA constructor Unit Test', function(accounts) {
 
     it("Throws if consts.ROUND_PERIOD_IN_SECS == 0", co(function* () {
         yield utils.assertThrows(ROSCATest.new(
-            0 /* use ETH */, 0 /* roundTimeInSecs */, consts.CONTRIBUTION_SIZE,
+            0 /* use ETH */, 0 /* use bidding Rosca */,
+            0 /* roundTimeInSecs */, consts.CONTRIBUTION_SIZE,
             blockTime + consts.START_TIME_DELAY, consts.memberList(), consts.SERVICE_FEE_IN_THOUSANDTHS),
             "contract creation successful");
     }));
@@ -34,7 +35,8 @@ contract('ROSCA constructor Unit Test', function(accounts) {
             (yield deployed.MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS.call()).toNumber();
 
         yield utils.assertThrows(ROSCATest.new(
-            0 /* use ETH */, consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
+            0 /* use ETH */, 0 /* use bidding Rosca */,
+            consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
             blockTime - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS - 1, consts.memberList(),
             consts.SERVICE_FEE_IN_THOUSANDTHS));
     }));
@@ -44,7 +46,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let MAX_FEE = yield deployed.MAX_FEE_IN_THOUSANDTHS.call();
 
         yield utils.assertThrows(ROSCATest.new(
-            0 /* use ETH */,
+            0 /* use ETH */, 0 /* use bidding Rosca */,
             consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
             blockTime + consts.START_TIME_DELAY, consts.memberList(),
             MAX_FEE.add(1)), "contract creation successful");
@@ -54,7 +56,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         // Note we only check ETH ROSCA creation as the constructor simply does not care
         // about whether or not ROSCA uses a token contract.
         let rosca = yield ROSCATest.new(
-            0 /* use ETH */,
+            0 /* use ETH */, 0 /* use bidding Rosca */,
             consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
             blockTime + consts.START_TIME_DELAY, consts.memberList(),
             consts.SERVICE_FEE_IN_THOUSANDTHS);
