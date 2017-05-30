@@ -70,7 +70,7 @@ contract ROSCA {
   // ROSCA parameters
   uint256 internal roundPeriodInSecs;
   uint16 internal serviceFeeInThousandths;
-  uint16 internal currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
+  uint16 public currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
   address internal foreperson;
   uint128 internal contributionSize;
   uint256 internal startTime;
@@ -87,17 +87,17 @@ contract ROSCA {
   bool internal forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
   // of discounts accumulated so far, divided by the number of ROSCA participants.
-  uint256 internal totalDiscounts = 0;
+  uint256 public totalDiscounts = 0;
 
   // Amount of fees reserved in the contract for fees.
   uint256 internal totalFees = 0;
 
   // Round state variables
-  uint256 internal lowestBid = 0;
-  address internal winnerAddress = 0;  // bidder who bid the lowest so far
+  uint256 public lowestBid = 0;
+  address public winnerAddress = 0;  // bidder who bid the lowest so far
 
   mapping(address => User) internal members;
-  address[] internal membersAddresses;  // for iterating through members' addresses
+  address[] public membersAddresses;  // for iterating through members' addresses
 
   // Other state
   // An escape hatch is used in case a major vulnerability is discovered in the contract code.
