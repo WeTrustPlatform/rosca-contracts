@@ -259,7 +259,6 @@ contract ROSCA {
   }
 
   function cleanUpPreviousRound() internal {
-    address delinquentWinner = 0x0;
     uint256 winnerIndex;
     bool winnerSelectedThroughBid = (winnerAddress != 0);
     uint16 numUnpaidParticipants = uint16(membersAddresses.length) - (currentRound - 1);
@@ -268,34 +267,7 @@ contract ROSCA {
       winnerAddress = membersAddresses[currentRound - 1];
     }
     if (winnerAddress == 0) {
-      // There was no bid in this round. Find an unpaid address for this epoch.
-      // Give priority to members in good standing (not delinquent).
-      // Note this randomness does not require high security, that's why we feel ok with using the block's timestamp.
-      // Everyone will be paid out eventually.
-      uint256 semi_random = now % numUnpaidParticipants;
-
-      for (uint16 i = 0; i < numUnpaidParticipants; i++) {
-        uint256 index = (semi_random + i) % numUnpaidParticipants;
-        address candidate = membersAddresses[index];
-        if (!members[candidate].paid) {
-          winnerIndex = index;
-          if (members[candidate].credit + totalDiscounts >= (currentRound * contributionSize)) {
-            // We found a non-delinquent winner.
-            winnerAddress = candidate;
-            break;
-          }
-          delinquentWinner = candidate;
-        }
-      }
-      if (winnerAddress == 0) {  // we did not find any non-delinquent winner.
-        // Perform some basic sanity checks.
-        if (delinquentWinner == 0 || members[delinquentWinner].paid) throw;
-        winnerAddress = delinquentWinner;
-        // Set the flag to true so we know this user cannot withdraw until debt has been paid.
-        members[winnerAddress].debt = true;
-      }
-      // Set lowestBid to the right value since there was no winning bid.
-      lowestBid = contributionSize * membersAddresses.length;
+      winnerIndex = findSemiRandomWinner(numUnpaidParticipants);
     }
     // We keep the unpaid participants at positions [0..num_participants - current_round) so that we can uniformly select
     // among them (if we didn't do that and there were a few consecutive paid participants, we'll be more likely to select the
@@ -304,12 +276,49 @@ contract ROSCA {
       swapWinner(winnerIndex, winnerSelectedThroughBid, numUnpaidParticipants - 1);
     }
 
+    creditWinner();
+    recalculateTotalFees();
+  }
+
+  function creditWinner() internal {
     uint256 currentRoundTotalDiscounts = removeFees(contributionSize * membersAddresses.length - lowestBid);
     totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
     members[winnerAddress].credit += removeFees(lowestBid);
     members[winnerAddress].paid = true;
     LogRoundFundsReleased(winnerAddress, lowestBid);
-    recalculateTotalFees();
+  }
+
+  function findSemiRandomWinner(uint16 numUnpaidParticipants) internal returns (uint256) {
+    address delinquentWinner = 0x0;
+    uint256 winnerIndex;
+    // There was no bid in this round. Find an unpaid address for this epoch.
+    // Give priority to members in good standing (not delinquent).
+    // Note this randomness does not require high security, that's why we feel ok with using the block's timestamp.
+    // Everyone will be paid out eventually.
+    uint256 semi_random = now % numUnpaidParticipants;
+    for (uint16 i = 0; i < numUnpaidParticipants; i++) {
+      uint256 index = (semi_random + i) % numUnpaidParticipants;
+      address candidate = membersAddresses[index];
+      if (!members[candidate].paid) {
+        winnerIndex = index;
+        if (members[candidate].credit + totalDiscounts >= (currentRound * contributionSize)) {
+          // We found a non-delinquent winner.
+          winnerAddress = candidate;
+          break;
+        }
+        delinquentWinner = candidate;
+      }
+    }
+    if (winnerAddress == 0) {  // we did not find any non-delinquent winner.
+      // Perform some basic sanity checks.
+      if (delinquentWinner == 0 || members[delinquentWinner].paid) throw;
+      winnerAddress = delinquentWinner;
+      // Set the flag to true so we know this user cannot withdraw until debt has been paid.
+      members[winnerAddress].debt = true;
+    }
+    // Set lowestBid to the right value since there was no winning bid.
+    lowestBid = contributionSize * membersAddresses.length;
+    return winnerIndex;
   }
 
   // Recalculates that total fees that should be allocated in the contract.
