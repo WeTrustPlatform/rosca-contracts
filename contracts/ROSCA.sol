@@ -83,14 +83,14 @@ contract ROSCA {
   // 2 : ROSCA where winners are selected through a ordered list (pre-determined ROSCA)
   enum typesOfROSCA { BIDDING_ROSCA, RANDOM_SELECTION_ROSCA, PRE_DETERMINED_ROSCA }
   typesOfROSCA roscaType;
-  bool internal endOfROSCA = false;
-  bool internal forepersonSurplusCollected = false;
+  bool public endOfROSCA = false;
+  bool public forepersonSurplusCollected = false;
   // A discount is the difference between a winning bid and the pot value. totalDiscounts is the amount
   // of discounts accumulated so far, divided by the number of ROSCA participants.
   uint256 public totalDiscounts = 0;
 
   // Amount of fees reserved in the contract for fees.
-  uint256 internal totalFees = 0;
+  uint256 public totalFees = 0;
 
   // Round state variables
   uint256 public lowestBid = 0;
@@ -107,8 +107,8 @@ contract ROSCA {
   // 3. If escape hatch is activated, no contributions and/or withdrawals are allowed. The foreperson
   //    may call withdraw() to withdraw all of the contract's funds and then disperse them offline
   //    among the participants.
-  bool internal escapeHatchEnabled = false;
-  bool internal escapeHatchActive = false;
+  bool public escapeHatchEnabled = false;
+  bool public escapeHatchActive = false;
 
   struct User {
     uint256 credit;  // amount of funds user has contributed - winnings (not including discounts) so far
@@ -121,58 +121,42 @@ contract ROSCA {
   // MODIFIERS
   ////////////
   modifier onlyFromMember {
-    if (!members[msg.sender].alive) {
-      throw;
-    }
+    require(members[msg.sender].alive);
     _;
   }
 
   modifier onlyFromForeperson {
-    if (msg.sender != foreperson) {
-      throw;
-    }
+    require(msg.sender == foreperson);
     _;
   }
 
   modifier onlyIfRoscaNotEnded {
-    if (endOfROSCA) {
-      throw;
-    }
+    require(!endOfROSCA);
     _;
   }
 
   modifier onlyIfRoscaEnded {
-    if (!endOfROSCA) {
-      throw;
-    }
+    require(endOfROSCA);
     _;
   }
 
   modifier onlyIfEscapeHatchActive {
-    if (!escapeHatchActive) {
-      throw;
-    }
+    require(escapeHatchActive);
     _;
   }
 
   modifier onlyIfEscapeHatchInactive {
-    if (escapeHatchActive) {
-      throw;
-    }
+    require(!escapeHatchActive);
     _;
   }
 
   modifier onlyBIDDING_ROSCA {
-    if (roscaType != typesOfROSCA.BIDDING_ROSCA) {
-      throw;
-    }
+    require(roscaType == typesOfROSCA.BIDDING_ROSCA);
     _;
   }
 
   modifier onlyFromEscapeHatchEnabler {
-    if (msg.sender != ESCAPE_HATCH_ENABLER) {
-      throw;
-    }
+    require(msg.sender == ESCAPE_HATCH_ENABLER);
     _;
   }
 
@@ -199,21 +183,13 @@ contract ROSCA {
       uint256 startTime_,
       address[] members_,
       uint16 serviceFeeInThousandths_) {
-    if (roundPeriodInSecs_ == 0) {
-      throw;
-    }
+    require(roundPeriodInSecs_ != 0 &&
+      startTime_ >= (now - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS) &&
+      serviceFeeInThousandths_ <= MAX_FEE_IN_THOUSANDTHS);
+
     roundPeriodInSecs = roundPeriodInSecs_;
-
     contributionSize = contributionSize_;
-
-    if (startTime_ < (now - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS)) {
-      throw;
-    }
     startTime = startTime_;
-    if (serviceFeeInThousandths_ > MAX_FEE_IN_THOUSANDTHS) {
-      throw;
-    }
-
     roscaType = roscaType_;
     tokenContract = erc20tokenContract;
     serviceFeeInThousandths = serviceFeeInThousandths_;
@@ -226,9 +202,8 @@ contract ROSCA {
   }
 
   function addMember(address newMember) internal {
-    if (members[newMember].alive) {  // already registered
-      throw;
-    }
+    require(!members[newMember].alive);  // already registered
+
     members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
     membersAddresses.push(newMember);
   }
@@ -240,9 +215,7 @@ contract ROSCA {
     */
   function startRound() onlyIfRoscaNotEnded external {
     uint256 roundStartTime = startTime + (uint(currentRound)  * roundPeriodInSecs);
-    if (now < roundStartTime ) {  // too early to start a new round.
-      throw;
-    }
+    assert(now >= roundStartTime ); // too early to start a new round.
 
     if (currentRound != 0) {
       cleanUpPreviousRound();
@@ -311,7 +284,7 @@ contract ROSCA {
     }
     if (winnerAddress == 0) {  // we did not find any non-delinquent winner.
       // Perform some basic sanity checks.
-      if (delinquentWinner == 0 || members[delinquentWinner].paid) throw;
+      assert(delinquentWinner != 0 && !members[delinquentWinner].paid);
       winnerAddress = delinquentWinner;
       // Set the flag to true so we know this user cannot withdraw until debt has been paid.
       members[winnerAddress].debt = true;
@@ -329,7 +302,7 @@ contract ROSCA {
     uint256 grossTotalFees = requiredContributions * membersAddresses.length;
 
     for (uint16 j = 0; j < membersAddresses.length; j++) {
-      User member = members[membersAddresses[j]];
+      User memory member = members[membersAddresses[j]];
       uint256 credit = member.credit;
       uint256 debit = requiredContributions;
       if (member.debt) {
@@ -374,20 +347,15 @@ contract ROSCA {
   // the amount.
   function validateAndReturnContribution() internal returns (uint256) {  // dontMakePublic
     bool isEthRosca = (tokenContract == address(0));
-    if (!isEthRosca && msg.value > 0) {  // token ROSCAs should not accept ETH
-      throw;
-    }
+    require(isEthRosca || msg.value <= 0);  // token ROSCAs should not accept ETH
 
     uint256 value = (isEthRosca ? msg.value : tokenContract.allowance(msg.sender, address(this)));
-    if (value == 0) {
-      throw;
-    }
+    require(value != 0);
+
     if (isEthRosca) {
       return value;
     }
-    if (!tokenContract.transferFrom(msg.sender, address(this), value)) {
-      throw;
-    }
+    require(tokenContract.transferFrom(msg.sender, address(this), value));
     return value;
   }
 
@@ -398,7 +366,7 @@ contract ROSCA {
    * Any excess funds are withdrawable through withdraw() without fee.
    */
   function contribute() payable onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive external {
-    User member = members[msg.sender];
+    User storage member = members[msg.sender];
     uint256 value = validateAndReturnContribution();
     member.credit += value;
     if (member.debt) {
@@ -424,14 +392,12 @@ contract ROSCA {
    * + New bid is lower than the lowest bid so far.
    */
   function bid(uint256 bid) onlyFromMember onlyIfRoscaNotEnded onlyIfEscapeHatchInactive onlyBIDDING_ROSCA external {
-    if (members[msg.sender].paid  ||
-        currentRound == 0 ||  // ROSCA hasn't started yet
+    require(!members[msg.sender].paid  &&
+        currentRound != 0 &&  // ROSCA hasn't started yet
         // participant not in good standing
-        members[msg.sender].credit + totalDiscounts < (currentRound * contributionSize) ||
+        members[msg.sender].credit + totalDiscounts >= (currentRound * contributionSize) &&
         // bid is less than minimum allowed
-        bid < contributionSize * membersAddresses.length * MIN_DISTRIBUTION_PERCENT / 100) {
-      throw;
-    }
+        bid >= contributionSize * membersAddresses.length * MIN_DISTRIBUTION_PERCENT / 100);
 
     // If winnerAddress is 0, this is the first bid, hence allow full pot.
     // Otherwise, make sure bid is low enough compared to previous bid.
@@ -463,17 +429,14 @@ contract ROSCA {
    * Withdraws available funds for msg.sender.
    */
   function withdraw() onlyFromMember onlyIfEscapeHatchInactive external returns(bool success) {
-    if (members[msg.sender].debt && !endOfROSCA) {  // delinquent winners need to first pay their debt
-      throw;
-    }
+    require (!members[msg.sender].debt || endOfROSCA); // delinquent winners need to first pay their debt
+
     uint256 totalCredit = members[msg.sender].credit + totalDiscounts;
 
     uint256 totalDebit = members[msg.sender].debt
         ? removeFees(membersAddresses.length * contributionSize)  // this must be end of rosca
         : currentRound * contributionSize;
-    if (totalDebit >= totalCredit) {  // nothing to withdraw
-        throw;
-    }
+    assert(totalDebit < totalCredit);  // nothing to withdraw
 
     uint256 amountToWithdraw = totalCredit - totalDebit;
     uint256 amountAvailable = getBalance() - totalFees;
@@ -537,9 +500,7 @@ contract ROSCA {
    */
   function endOfROSCARetrieveSurplus() onlyFromForeperson onlyIfRoscaEnded external {
     uint256 roscaCollectionTime = startTime + ((membersAddresses.length + 1) * roundPeriodInSecs);
-    if (now < roscaCollectionTime || forepersonSurplusCollected) {
-        throw;
-    }
+    assert(now >= roscaCollectionTime && !forepersonSurplusCollected);
 
     forepersonSurplusCollected = true;
     uint256 amountToCollect = getBalance() - totalFees;
@@ -586,9 +547,8 @@ contract ROSCA {
    * to be dispersed offline to the other participants.
    */
   function activateEscapeHatch() onlyFromForeperson external {
-    if (!escapeHatchEnabled) {
-      throw;
-    }
+    require(escapeHatchEnabled);
+
     escapeHatchActive = true;
     LogEscapeHatchActivated();
   }
