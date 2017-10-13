@@ -39,15 +39,16 @@ contract ROSCA {
   // TODO(ron): replace this with an actual wallet. Right now this is accounts[9] of the testrpc used
   // by tests.
   // WeTrust's account from which Escape Hatch can be enabled.
-  address constant internal ESCAPE_HATCH_ENABLER = 0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e;
+  address constant internal ESCAPE_HATCH_ENABLER = 0x7f299eb63832d033a1252e8138574a202E47B92e;
 
   /////////
   // EVENTS
   /////////
   event LogContributionMade(address user, uint256 amount, uint256 currentRound);
   event LogStartOfRound(uint256 currentRound);
+  event LogBidSurpassed(uint256 prevBid, address prevWinnerAddress, uint256 currentRound);
   event LogNewLowestBid(uint256 bid, address winnerAddress, uint256 currentRound);
-  event LogRoundFundsReleased(address winnerAddress, uint256 amount, uint256 currentRound);
+  event LogRoundFundsReleased(address winnerAddress, uint256 amount, uint256 roundDiscount, uint256 currentRound);
   event LogFundsWithdrawal(address user, uint256 amount, uint256 currentRound);
   // Fired when withdrawer is entitled for a larger amount than the contract
   // actually holds (excluding fees). A LogFundsWithdrawal will follow
@@ -256,10 +257,11 @@ contract ROSCA {
 
   function creditWinner() internal {
     uint256 currentRoundTotalDiscounts = removeFees(potSize() - lowestBid);
-    totalDiscounts += currentRoundTotalDiscounts / membersAddresses.length;
+    uint256 roundDiscount = currentRoundTotalDiscounts / membersAddresses.length;
+    totalDiscounts += roundDiscount;
     members[winnerAddress].credit += removeFees(lowestBid);
     members[winnerAddress].paid = true;
-    LogRoundFundsReleased(winnerAddress, lowestBid, currentRound);
+    LogRoundFundsReleased(winnerAddress, lowestBid, roundDiscount, currentRound);
   }
 
   function findSemiRandomWinner(uint16 numUnpaidParticipants) internal returns (uint256) {
@@ -410,6 +412,10 @@ contract ROSCA {
       LogUnsuccessfulBid(msg.sender, bid, lowestBid, currentRound);
       return;
     }
+    if (winnerAddress != 0) {
+      LogBidSurpassed(lowestBid, winnerAddress, currentRound);
+    }
+
     lowestBid = bid;
     winnerAddress = msg.sender;
     LogNewLowestBid(lowestBid, winnerAddress, currentRound);

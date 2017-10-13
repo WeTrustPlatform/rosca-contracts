@@ -25,6 +25,10 @@ def substitute(content):
 
   for i in range(0, len(lines)):
     line = lines[i]
+    if "ESCAPE_HATCH_ENABLER" in line:
+      originalAddress = re.compile(r'\s+= 0x\S*')
+      testAddress = '= 0x1dF62f291b2E969fB0849d99D9Ce41e2F137006e;'
+      line = originalAddress.sub(testAddress, line)
     if "dontMakePublic" in line:
       continue
     internalOrPrivateRe = re.compile(r'\s+(internal|private)\s*')
