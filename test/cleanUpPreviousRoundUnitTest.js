@@ -23,7 +23,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(), // needed to set lowestBid value + winnerAddress to 0
             roscaHelper.contribute(0, consts.CONTRIBUTION_SIZE),
         ]);
         yield roscaHelper.bid(0, BID_TO_PLACE);
@@ -41,7 +40,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
         ]);
 
@@ -62,7 +60,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
     it("checks if random unpaid member in good Standing is picked when no bid was placed", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             // member 0 will be eligible to win the pot if no bid was placed
             roscaHelper.contribute(0, consts.CONTRIBUTION_SIZE),
             // member 2 will be eligible to win the pot if no bid was placed
@@ -96,7 +93,6 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
 
         let pot = memberList.length * consts.CONTRIBUTION_SIZE;
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield rosca.startRound();
         yield rosca.contribute(1, consts.CONTRIBUTION_SIZE);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);

@@ -14,12 +14,11 @@ contract('Pre-Ordered ROSCA Test', function(accounts) {
 
   beforeEach(co(function* () {
     rosca = new ROSCAHelper(accounts, (yield utils.createEthROSCA(MEMBER_LIST, 2)));
+    consts.setMemberList(MEMBER_LIST);
   }));
 
   it("Checks that calling bid throws in a valid scenario for bidding ROSCA", co(function* () {
     const VALID_BID = 0.98 * consts.defaultPot();
-    utils.increaseTime(consts.START_TIME_DELAY);
-    yield rosca.startRound();
 
     yield utils.assertThrows(rosca.bid(0, VALID_BID));
     yield rosca.contribute(0, consts.CONTRIBUTION_SIZE);
@@ -33,8 +32,7 @@ contract('Pre-Ordered ROSCA Test', function(accounts) {
     yield rosca.contribute(4, consts.defaultPot());
     yield rosca.contribute(7, consts.defaultPot());
 
-    yield rosca.startRound();
-    for (let i = 0; i < consts.memberCount(); i++) {
+    for (let i = 0; i < consts.memberCount() - 1; i++) {
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
       let receipt = yield rosca.startRound();
       let log = receipt.logs[0];

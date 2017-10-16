@@ -38,7 +38,6 @@ contract('fees unit test', function(accounts) {
 
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
-      roscaHelper.startRound(),
       roscaHelper.contribute(0, consts.CONTRIBUTION_SIZE),
       roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
     ]);
@@ -75,7 +74,6 @@ contract('fees unit test', function(accounts) {
     // In this test, accounts[0] roscaHelper.contributes 2C in round 1, then nothing in round 2.
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
-      roscaHelper.startRound(),
       roscaHelper.contribute(0, 2 * consts.CONTRIBUTION_SIZE),
       roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
     ]);
@@ -113,7 +111,6 @@ contract('fees unit test', function(accounts) {
     // In this test, accounts[0] contributes 1.5C in round 1, and another 1C in round 2.
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
-      roscaHelper.startRound(),
       roscaHelper.contribute(0, 1.5 * consts.CONTRIBUTION_SIZE),
       roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
     ]);
@@ -148,7 +145,6 @@ contract('fees unit test', function(accounts) {
     // then withdraws, then contributes another 1C in round 2 .
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
-      roscaHelper.startRound(),
       roscaHelper.contribute(0, 1.5 * consts.CONTRIBUTION_SIZE),
     ]);
 
@@ -190,7 +186,6 @@ contract('fees unit test', function(accounts) {
     // In this test, accounts[0] contributes 0.5C in round 1, and another 1C in round 2.
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
-      roscaHelper.startRound(),
       roscaHelper.contribute(0, 0.5 * consts.CONTRIBUTION_SIZE),
       roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
     ]);
@@ -219,7 +214,6 @@ contract('fees unit test', function(accounts) {
     // In this test, accounts[0] roscaHelper.contributes 0.5C in round 1, and another 1C in round 2.
     utils.increaseTime(consts.START_TIME_DELAY + 200);
     yield Promise.all([
-      roscaHelper.startRound(),
       roscaHelper.contribute(0, consts.CONTRIBUTION_SIZE),
     ]);
 

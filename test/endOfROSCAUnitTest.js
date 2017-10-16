@@ -23,18 +23,19 @@ contract('end of ROSCA unit test', function(accounts) {
     // the contract ends in a surplus.
     function* runFullRoscaNoWithdraw(rosca) {
       // Get to the start of the ROSCA.
-      utils.increaseTime(consts.START_TIME_DELAY);
+      utils.increaseTime(consts.START_TIME_DELAY + consts.ROUND_PERIOD_IN_SECS);
 
-      for (let round = 0; round < consts.memberCount(); round++) {
+      for (let round = 1; round < consts.memberCount(); round++) {
         // In each round, have each participant contribute a bit more than
         // they need to. We do that so that money is left over in the contract
         // at the end.
-        yield rosca.startRound();
-
         for (let participant = 0; participant < consts.memberCount(); participant++) {
           yield rosca.contribute(participant, consts.CONTRIBUTION_SIZE);
         }
         yield rosca.bid(round, consts.defaultPot());
+
+        yield rosca.startRound();
+
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
       }
     }

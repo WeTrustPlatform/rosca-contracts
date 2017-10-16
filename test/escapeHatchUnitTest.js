@@ -25,14 +25,13 @@ contract('Escape Hatch unit test', function(accounts) {
   // Runs the ROSCA 2 rounds. Everyone contributes, no one withdraws.
   function* runRoscUpToAPoint(rosca) {
     // Get to the start of the ROSCA.
-    utils.increaseTime(consts.START_TIME_DELAY);
+    utils.increaseTime(consts.START_TIME_DELAY + consts.ROUND_PERIOD_IN_SECS);
 
     for (let round = 0; round < 2; round++) {
-      yield rosca.startRound();
-
       for (let participant = 0; participant < consts.memberCount(); participant++) {
         yield rosca.contribute(participant, consts.CONTRIBUTION_SIZE);
       }
+      yield rosca.startRound();
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
     }
   }

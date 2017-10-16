@@ -122,17 +122,6 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
   // MC is memberCount == 4
   // NR is NET_REWARDS
 
-  function* testPreRosca() {
-    let contract = yield rosca.getContractStatus();
-
-    for (let i = 0; i < consts.memberCount(); ++i) {
-      assert.equal(contract.credits[i], 0); // credit of each participant
-    }
-    assert.equal(contract.totalDiscounts, 0); // totalDiscount value
-    assert.equal(contract.currentRound, 0); // currentRound value
-    assert.equal(contract.balance, 0);
-  }
-
   function* test1stRound() {
     utils.increaseTime(consts.START_TIME_DELAY);
     // 1st round: p2 wins 0.95 of the pot
@@ -140,7 +129,6 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.contribute(2, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[2][0]);  // p2's credit == C
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-    yield rosca.startRound();
     yield rosca.contribute(1, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[1][0]); // p1's credit = C * 1.2
     yield rosca.bid(2, consts.defaultPot()); // lowestBid = pot, winner = 2
     // foreperson should be allowed to withdraw the extra C * 9, new credit = contributionSize
@@ -396,7 +384,6 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
   }
 
   function* testCurrentRosca() {
-    yield testPreRosca();
     yield test1stRound();
     yield test2ndRound();
     yield test3rdRound();

@@ -26,7 +26,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
     it("Throws when calling bid without being in good Standing", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield roscaHelper.startRound();
 
         yield utils.assertThrows(roscaHelper.bid(1, consts.defaultPot()),
             "expected calling bid before contributing to throw");
@@ -39,7 +38,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
@@ -53,7 +51,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-          roscaHelper.startRound(),
           roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
           roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
         ]);
@@ -81,7 +78,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
@@ -104,8 +100,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
     it("Throws when placing a valid bid from paid member", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
-
             roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
@@ -125,7 +119,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
             roscaHelper.contribute(3, consts.CONTRIBUTION_SIZE),
         ]);
@@ -151,7 +144,6 @@ contract('ROSCA bid Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
             roscaHelper.contribute(3, consts.CONTRIBUTION_SIZE),
         ]);

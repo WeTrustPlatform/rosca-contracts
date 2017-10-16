@@ -34,7 +34,6 @@ contract('ROSCA reentry attack test', function(accounts) {
 
     // In round 1, let attack contract contribute 2.5C, other player contributes 5C.
     // Attack contract bids, so that we know they win.
-    yield rosca.startRound();
     yield attackContract.contribute({from: accounts[1], value: consts.CONTRIBUTION_SIZE * 2.5, gas: 4e6});
     yield attackContract.bid(0.9 * DEFAULT_POT, {from: accounts[0], gas: 4e6});
 

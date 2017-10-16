@@ -19,7 +19,6 @@ contract('lottery ROSCA Test', function(accounts) {
   it("Checks that calling bid throws in a valid scenario for bidding ROSCA", co(function* () {
     const VALID_BID = 0.98 * consts.defaultPot();
     utils.increaseTime(consts.START_TIME_DELAY);
-    yield rosca.startRound();
 
     yield utils.assertThrows(rosca.bid(1, VALID_BID));
     yield rosca.contribute(0, consts.CONTRIBUTION_SIZE);

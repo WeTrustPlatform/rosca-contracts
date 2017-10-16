@@ -29,7 +29,6 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         ]);
 
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield roscaHelper.startRound();
         yield roscaHelper.bid(2, consts.defaultPot() * 0.98);
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
@@ -54,7 +53,6 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
     it("checks that getParticipantBalance returns negative value for delinquents " +
        "(who haven't won the pot)", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield roscaHelper.startRound();
 
         // get the balance of delinquent who haven't won the Pot
         // test by calling withdraw, which should throw and
@@ -86,7 +84,6 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             roscaHelper.contribute(0, 5 * consts.CONTRIBUTION_SIZE),
             roscaHelper.contribute(1, 0.5 * consts.CONTRIBUTION_SIZE),
             roscaHelper.contribute(2, 0.5 * consts.CONTRIBUTION_SIZE),

@@ -35,7 +35,8 @@ contract('ROSCA contribute Unit Test', function(accounts) {
     }));
 
     it("throws when contributing after end of Rosca", co(function* () {
-        for (let i = 0; i < consts.memberList().length + 1; i++) {
+        utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
+        for (let i = 0; i < consts.memberList().length; i++) {
             utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
             yield ethRoscaHelper.startRound();
         }
@@ -76,7 +77,6 @@ contract('ROSCA contribute Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            roscaHelper.startRound(),
             roscaHelper.contribute(1, 0.5 * consts.CONTRIBUTION_SIZE),
             roscaHelper.contribute(0, 0.5 * consts.CONTRIBUTION_SIZE),
             roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),

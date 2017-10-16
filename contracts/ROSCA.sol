@@ -36,10 +36,8 @@ contract ROSCA {
   // Every new bid has to be at most this much of the previous lowest bid
   uint8 constant internal MAX_NEXT_BID_RATIO = 98;
 
-  // TODO(ron): replace this with an actual wallet. Right now this is accounts[9] of the testrpc used
-  // by tests.
   // WeTrust's account from which Escape Hatch can be enabled.
-  address constant internal ESCAPE_HATCH_ENABLER = 0x7f299eb63832d033a1252e8138574a202E47B92e;
+  address constant internal ESCAPE_HATCH_ENABLER = 0x5bb8D0DfdAf3a03cF51F9c8623C160a4c021E522;
 
   /////////
   // EVENTS
@@ -71,7 +69,7 @@ contract ROSCA {
   // ROSCA parameters
   uint256 internal roundPeriodInSecs;
   uint16 internal serviceFeeInThousandths;
-  uint16 public currentRound;  // set to 0 when ROSCA is created, becomes 1 when ROSCA starts
+  uint16 public currentRound = 1;  // rosca is started the moment it is created
   address internal foreperson;
   uint128 internal contributionSize;
   uint256 internal startTime;

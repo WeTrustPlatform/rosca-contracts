@@ -25,10 +25,10 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
     it("Throws when calling withdraw from a non-member", co(function* () {
         yield Promise.all([
-            ethRoscaHelper.contribute(0, consts.CONTRIBUTION_SIZE),
-            ethRoscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
-            ethRoscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
-            ethRoscaHelper.contribute(3, consts.CONTRIBUTION_SIZE),
+            ethRoscaHelper.contribute(0, 2 * consts.CONTRIBUTION_SIZE),
+            ethRoscaHelper.contribute(1, 2 * consts.CONTRIBUTION_SIZE),
+            ethRoscaHelper.contribute(2, 2 * consts.CONTRIBUTION_SIZE),
+            ethRoscaHelper.contribute(3, 2 * consts.CONTRIBUTION_SIZE),
         ]);
 
         yield Promise.all([
@@ -44,23 +44,23 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
     it("Watches for event LogFundsWithdrawal()", co(function* () {
       for (let roscaHelper of [ethRoscaHelper, erc20RoscaHelper]) {
-        const ACTUAL_CONTRIBUTION = consts.CONTRIBUTION_SIZE * 0.8;
+        const ACTUAL_CONTRIBUTION = consts.CONTRIBUTION_SIZE * 1.8;
+        const EXPECTED_WITHDRAWAL = consts.CONTRIBUTION_SIZE * 0.8;
 
         yield roscaHelper.contribute(0, ACTUAL_CONTRIBUTION);
 
         let result = yield roscaHelper.withdraw(0);
         let log = result.logs[0];
 
-        assert.equal(log.args.user, accounts[0], "LogContributionMade doesn't display proper user value");
-        assert.equal(log.args.amount.toNumber(), ACTUAL_CONTRIBUTION,
-            "LogContributionMade doesn't display proper amount value");
+        assert.equal(log.args.user, accounts[0], "LogFundsWithdrawal doesn't display proper user value");
+        assert.equal(log.args.amount.toNumber(), EXPECTED_WITHDRAWAL, // because we are in round 1
+            "LogFundsWithdrawal doesn't display proper amount value");
       }
     }));
 
     it("Throws when calling withdraw when totalDebit > totalCredit", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            ethRoscaHelper.startRound(),
             ethRoscaHelper.contribute(2, consts.CONTRIBUTION_SIZE * 0.8),
         ]);
 
@@ -72,7 +72,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
       for (let roscaHelper of [ethRoscaHelper, erc20RoscaHelper]) {
         let tokenContract = yield roscaHelper.tokenContract();
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield roscaHelper.startRound();
         yield roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE); // contract's balance = consts.CONTRIBUTION_SIZE
         yield roscaHelper.bid(2, consts.defaultPot());
 
@@ -105,7 +104,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
       for (let roscaHelper of [ethRoscaHelper, erc20RoscaHelper]) {
         let tokenContract = yield roscaHelper.tokenContract();
         utils.increaseTime(consts.START_TIME_DELAY);
-        yield roscaHelper.startRound();
         yield roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE);
         yield roscaHelper.contribute(1, consts.CONTRIBUTION_SIZE);
         yield roscaHelper.contribute(0, consts.CONTRIBUTION_SIZE);
@@ -133,7 +131,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
     it("withdraw when contract can't send what the user is entitled while totalDiscount != 0", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            ethRoscaHelper.startRound(),
             ethRoscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
             ethRoscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
             // to make sure contract's balance is less than winning bid
@@ -170,7 +167,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            ethRoscaHelper.startRound(),
             ethRoscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
             ethRoscaHelper.contribute(1, consts.CONTRIBUTION_SIZE),
             ethRoscaHelper.contribute(3, consts.CONTRIBUTION_SIZE),
@@ -208,7 +204,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
          utils.increaseTime(consts.START_TIME_DELAY);
          yield Promise.all([
-             ethRoscaHelper.startRound(),
              ethRoscaHelper.contribute(1, 0.5 * consts.CONTRIBUTION_SIZE),
              ethRoscaHelper.contribute(0, 0.5 * consts.CONTRIBUTION_SIZE),
          ]);
@@ -235,7 +230,6 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
 
         utils.increaseTime(consts.START_TIME_DELAY);
         yield Promise.all([
-            ethRoscaHelper.startRound(),
             ethRoscaHelper.contribute(1, 0.5 * consts.CONTRIBUTION_SIZE),
             ethRoscaHelper.contribute(0, 0.5 * consts.CONTRIBUTION_SIZE),
         ]);
