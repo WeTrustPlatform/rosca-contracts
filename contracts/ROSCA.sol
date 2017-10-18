@@ -199,6 +199,8 @@ contract ROSCA {
     for (uint16 i = 0; i < members_.length; i++) {
       addMember(members_[i]);
     }
+
+    LogStartOfRound(currentRound);
   }
 
   function addMember(address newMember) internal {
