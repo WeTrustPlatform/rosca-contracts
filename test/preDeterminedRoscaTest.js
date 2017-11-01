@@ -37,6 +37,7 @@ contract('Pre-Ordered ROSCA Test', function(accounts) {
       let receipt = yield rosca.startRound();
       let log = receipt.logs[0];
       assert.equal(log.args.winnerAddress, MEMBER_LIST[i]);
+      assert.equal(log.args.amount.toString(), consts.defaultPot());
     }
   }));
 });

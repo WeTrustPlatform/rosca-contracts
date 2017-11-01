@@ -256,6 +256,9 @@ contract ROSCA {
   }
 
   function creditWinner() internal {
+    if (lowestBid == 0) {
+      lowestBid = potSize();
+    }
     uint256 currentRoundTotalDiscounts = removeFees(potSize() - lowestBid);
     uint256 roundDiscount = currentRoundTotalDiscounts / membersAddresses.length;
     totalDiscounts += roundDiscount;
