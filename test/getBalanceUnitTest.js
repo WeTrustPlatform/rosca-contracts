@@ -108,7 +108,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
         // 0.5 * consts.CONTRIBUTION_SIZE(already contributed)
         let expectedBalance = - 2.5 * consts.CONTRIBUTION_SIZE;
         assert.equal(balance, expectedBalance);
-        utils.assertThrows(roscaHelper.withdraw(winnerAddress));
+        utils.assertRevert(roscaHelper.withdraw(winnerAddress));
         // delinquent who won the Pot already would be able to withdraw consts.defaultPot() * FEE
         // if they are no longer in debt
         let debt = - balance;

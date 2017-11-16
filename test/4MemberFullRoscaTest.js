@@ -193,8 +193,8 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     yield rosca.contribute(0, consts.CONTRIBUTION_SIZE * CONTRIBUTIONS_PERCENT[0][1]);
     yield rosca.bid(0, consts.defaultPot() * WINNING_BID_PERCENT[1] * 1.05); // lowestBid = Pot * 0.95, winner = 0
     yield rosca.bid(1, consts.defaultPot() * WINNING_BID_PERCENT[1]); // lowestBid = Pot * 0.90, winner = 1
-    yield utils.assertThrows(rosca.bid(2, consts.defaultPot() * 0.75));  // 2 already won
-    yield utils.assertThrows(rosca.bid(3, consts.defaultPot() * 0.75));  // 3 is not in good standing
+    yield utils.assertRevert(rosca.bid(2, consts.defaultPot() * 0.75));  // 2 already won
+    yield utils.assertRevert(rosca.bid(3, consts.defaultPot() * 0.75));  // 3 is not in good standing
 
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
@@ -300,10 +300,10 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     ]);
 
     // nobody can rosca.bid now - p0, p1, p2 already won. p3 is not in good standing.
-    yield utils.assertThrows(rosca.bid(0, consts.defaultPot() * 0.9));
-    yield utils.assertThrows(rosca.bid(1, consts.defaultPot() * 0.9));
-    yield utils.assertThrows(rosca.bid(2, consts.defaultPot() * 0.9));
-    yield utils.assertThrows(rosca.bid(3, consts.defaultPot() * 0.9));
+    yield utils.assertRevert(rosca.bid(0, consts.defaultPot() * 0.9));
+    yield utils.assertRevert(rosca.bid(1, consts.defaultPot() * 0.9));
+    yield utils.assertRevert(rosca.bid(2, consts.defaultPot() * 0.9));
+    yield utils.assertRevert(rosca.bid(3, consts.defaultPot() * 0.9));
 
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
@@ -350,7 +350,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     assertCloseTo(contract.balance, expectedContractBalance);
     assert.equal(contract.credits[0], consts.defaultPot() - contractBefore.totalDiscounts);
 
-    utils.assertThrows(rosca.contribute(2, consts.CONTRIBUTION_SIZE));
+    utils.assertRevert(rosca.contribute(2, consts.CONTRIBUTION_SIZE));
 
     // p3 can withdraw the amount that he contributed
     yield rosca.withdraw(3);
@@ -363,7 +363,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
     let tokenContract = yield rosca.tokenContract();
     utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
     // Only the foreperson can collect the surplus funds.
-    yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus(2));
+    yield utils.assertRevert(rosca.endOfROSCARetrieveSurplus(2));
     let p0balanceBefore = yield rosca.getBalance(0, tokenContract);
     yield rosca.endOfROSCARetrieveSurplus(0);
     let p0balanceAfter = yield rosca.getBalance(0, tokenContract);
@@ -372,7 +372,7 @@ contract('Full 4 Member ROSCA Test', function(accounts) {
         2.0 * consts.CONTRIBUTION_SIZE / 1000 * NET_REWARDS_RATIO);
 
     // Only the foreperson can collect the fees.
-    yield utils.assertThrows(rosca.endOfROSCARetrieveSurplus(2));
+    yield utils.assertRevert(rosca.endOfROSCARetrieveSurplus(2));
 
     let forepersonBalanceBefore = yield rosca.getBalance(0, tokenContract);
     yield rosca.endOfROSCARetrieveFees(0);

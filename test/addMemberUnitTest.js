@@ -19,13 +19,13 @@ contract('ROSCA addMember Unit Test', function(accounts) {
     }));
 
     it("throws when adding an existing member", co(function* () {
-        yield utils.assertThrows(roscaHelper.addMember(1),
+        yield utils.assertRevert(roscaHelper.addMember(1),
             "adding existing member succeed when it should have thrown");
     }));
 
     it("checks member get added properly", co(function* () {
         // try contributing from a non-member to make sure membership hasn't been established
-        yield utils.assertThrows(roscaHelper.contribute(4, consts.CONTRIBUTION_SIZE),
+        yield utils.assertRevert(roscaHelper.contribute(4, consts.CONTRIBUTION_SIZE),
             "expected calling contribute from non-member to throw");
 
         yield roscaHelper.addMember(accounts[4]);

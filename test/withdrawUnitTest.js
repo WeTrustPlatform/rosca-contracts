@@ -38,7 +38,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             ethRoscaHelper.withdraw(3),
         ]);
 
-        yield utils.assertThrows(ethRoscaHelper.withdraw(4),
+        yield utils.assertRevert(ethRoscaHelper.withdraw(4),
             "expected calling withdraw from a non-member to throw");
     }));
 
@@ -215,7 +215,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
          let winnerAddress = log.args.winnerAddress;
 
          // Throws when delinquent, does not throw otherwise.
-         yield utils.assertThrows(ethRoscaHelper.withdraw(winnerAddress));
+         yield utils.assertRevert(ethRoscaHelper.withdraw(winnerAddress));
          yield ethRoscaHelper.contribute(winnerAddress, 1.5 * consts.CONTRIBUTION_SIZE);
          yield ethRoscaHelper.withdraw(winnerAddress);
     }));
@@ -241,7 +241,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
         let winnerAddress = log.args.winnerAddress;
 
         // Throws when delinquent, does not throw otherwise.
-        yield utils.assertThrows(ethRoscaHelper.withdraw(winnerAddress));
+        yield utils.assertRevert(ethRoscaHelper.withdraw(winnerAddress));
 
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
         yield ethRoscaHelper.startRound(); // endOfRosca = true;

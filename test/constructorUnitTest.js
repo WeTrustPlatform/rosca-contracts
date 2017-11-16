@@ -22,7 +22,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
     });
 
     it("Throws if consts.ROUND_PERIOD_IN_SECS == 0", co(function* () {
-        yield utils.assertThrows(ROSCATest.new(
+        yield utils.assertRevert(ROSCATest.new(
             0 /* use ETH */, 0 /* use bidding Rosca */,
             0 /* roundTimeInSecs */, consts.CONTRIBUTION_SIZE,
             blockTime + consts.START_TIME_DELAY, consts.memberList(), consts.SERVICE_FEE_IN_THOUSANDTHS),
@@ -34,7 +34,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS =
             (yield deployed.MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS.call()).toNumber();
 
-        yield utils.assertThrows(ROSCATest.new(
+        yield utils.assertRevert(ROSCATest.new(
             0 /* use ETH */, 0 /* use bidding Rosca */,
             consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
             blockTime - MAXIMUM_TIME_PAST_SINCE_ROSCA_START_SECS - 1, consts.memberList(),
@@ -45,7 +45,7 @@ contract('ROSCA constructor Unit Test', function(accounts) {
         let deployed = yield ROSCATest.deployed();
         let MAX_FEE = yield deployed.MAX_FEE_IN_THOUSANDTHS.call();
 
-        yield utils.assertThrows(ROSCATest.new(
+        yield utils.assertRevert(ROSCATest.new(
             0 /* use ETH */, 0 /* use bidding Rosca */,
             consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE,
             blockTime + consts.START_TIME_DELAY, consts.memberList(),

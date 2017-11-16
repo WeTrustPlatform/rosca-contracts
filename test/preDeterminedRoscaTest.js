@@ -20,9 +20,9 @@ contract('Pre-Ordered ROSCA Test', function(accounts) {
   it("Checks that calling bid throws in a valid scenario for bidding ROSCA", co(function* () {
     const VALID_BID = 0.98 * consts.defaultPot();
 
-    yield utils.assertThrows(rosca.bid(0, VALID_BID));
+    yield utils.assertRevert(rosca.bid(0, VALID_BID));
     yield rosca.contribute(0, consts.CONTRIBUTION_SIZE);
-    yield utils.assertThrows(rosca.bid(0, VALID_BID));
+    yield utils.assertRevert(rosca.bid(0, VALID_BID));
   }));
 
   it("Checks that winners for each round follows the Pre Ordered List", co(function* () {

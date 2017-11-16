@@ -29,7 +29,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         yield roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE);
 
         // check throws when contributing from non-member.
-        yield utils.assertThrows(roscaHelper.contribute(4, consts.CONTRIBUTION_SIZE),
+        yield utils.assertRevert(roscaHelper.contribute(4, consts.CONTRIBUTION_SIZE),
             "calling contribute from a non-member success");
       }
     }));
@@ -41,7 +41,7 @@ contract('ROSCA contribute Unit Test', function(accounts) {
             yield ethRoscaHelper.startRound();
         }
 
-        utils.assertThrows(ethRoscaHelper.contribute(0, consts.CONTRIBUTION_SIZE));
+        utils.assertRevert(ethRoscaHelper.contribute(0, consts.CONTRIBUTION_SIZE));
     }));
 
     it("generates a LogContributionMade event after a successful contribution", co(function* () {
@@ -96,10 +96,10 @@ contract('ROSCA contribute Unit Test', function(accounts) {
         // so credit must be at least = 3(currentRound) + 3(defaultPot) * fee - totalDiscount
         // so winnerAddress needs to contribute = 2.5 - totalDiscount
         let contributionToNonDelinquency = 2.5 * consts.CONTRIBUTION_SIZE - (yield roscaHelper.totalDiscounts());
-        yield utils.assertThrows(roscaHelper.withdraw(winnerAddress));
+        yield utils.assertRevert(roscaHelper.withdraw(winnerAddress));
         // for some reason 1 is being rounded up so 1000 is used instead
         yield roscaHelper.contribute(winnerAddress, (contributionToNonDelinquency - 1000));
-        yield utils.assertThrows(roscaHelper.withdraw(winnerAddress));
+        yield utils.assertRevert(roscaHelper.withdraw(winnerAddress));
         yield roscaHelper.contribute(winnerAddress, 1000);
         yield roscaHelper.withdraw(winnerAddress);
     }));

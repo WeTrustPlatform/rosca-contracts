@@ -20,14 +20,14 @@ contract('ROSCA bid Unit Test', function(accounts) {
     }));
 
     it("Throws when calling bid with valid parameters before ROSCA starts", co(function* () {
-        yield utils.assertThrows(roscaHelper.bid(1, consts.defaultPot()),
+        yield utils.assertRevert(roscaHelper.bid(1, consts.defaultPot()),
             "expected calling bid in round 0 to throw");
     }));
 
     it("Throws when calling bid without being in good Standing", co(function* () {
         utils.increaseTime(consts.START_TIME_DELAY);
 
-        yield utils.assertThrows(roscaHelper.bid(1, consts.defaultPot()),
+        yield utils.assertRevert(roscaHelper.bid(1, consts.defaultPot()),
             "expected calling bid before contributing to throw");
     }));
 
@@ -41,7 +41,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
             roscaHelper.contribute(2, consts.CONTRIBUTION_SIZE),
         ]);
 
-        yield utils.assertThrows(roscaHelper.bid(2, BID_TO_PLACE),
+        yield utils.assertRevert(roscaHelper.bid(2, BID_TO_PLACE),
             "expected placing bid less than MIN_DISTRIBUTION_PERCENT threshold to throw");
     }));
 
@@ -107,7 +107,7 @@ contract('ROSCA bid Unit Test', function(accounts) {
         utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
         yield roscaHelper.startRound();
 
-        yield utils.assertThrows(roscaHelper.bid(2, consts.defaultPot()),
+        yield utils.assertRevert(roscaHelper.bid(2, consts.defaultPot()),
             "calling bid from paid member succeed, didn't throw");
     }));
 

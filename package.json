@@ -16,7 +16,7 @@
     "chai": "^3.5.0",
     "co": "^4.6.0",
     "eslint": "^3.12.2",
-    "ethereumjs-testrpc": "3.9.2",
+    "ethereumjs-testrpc": "6.0.2",
     "scrypt": "^6.0.3",
     "truffle": "3.4.11"
   },

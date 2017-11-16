@@ -110,10 +110,10 @@ contract('end of ROSCA unit test', function(accounts) {
       // we do not call yield rosca.startRound() here
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-      yield utils.assertThrows(
+      yield utils.assertRevert(
         ethRoscaHelper.endOfROSCARetrieveSurplus(0),
         "expected calling endOfROSCARetrieveSurplus w/o calling startRound() to throw");
-      yield utils.assertThrows(
+      yield utils.assertRevert(
         ethRoscaHelper.endOfROSCARetrieveFees(0),
         "expected calling endOfROSCARetrieveSurplus w/o calling startRound() to throw");
     }));
@@ -124,14 +124,14 @@ contract('end of ROSCA unit test', function(accounts) {
       yield ethRoscaHelper.startRound();
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
 
-      yield utils.assertThrows(
+      yield utils.assertRevert(
         ethRoscaHelper.endOfROSCARetrieveSurplus(1));
-      yield utils.assertThrows(
+      yield utils.assertRevert(
         ethRoscaHelper.endOfROSCARetrieveSurplus(9));
 
-      yield utils.assertThrows(
+      yield utils.assertRevert(
         ethRoscaHelper.endOfROSCARetrieveFees(1));
-      yield utils.assertThrows(
+      yield utils.assertRevert(
         ethRoscaHelper.endOfROSCARetrieveFees(9));
     }));
 
@@ -139,7 +139,7 @@ contract('end of ROSCA unit test', function(accounts) {
       yield* runFullRoscaNoWithdraw(ethRoscaHelper);
 
       // startRound() has not been called yet.
-      yield utils.assertThrows(
+      yield utils.assertRevert(
           ethRoscaHelper.endOfROSCARetrieveFees(0));
       yield ethRoscaHelper.startRound();
 

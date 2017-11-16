@@ -20,8 +20,8 @@ contract('lottery ROSCA Test', function(accounts) {
     const VALID_BID = 0.98 * consts.defaultPot();
     utils.increaseTime(consts.START_TIME_DELAY);
 
-    yield utils.assertThrows(rosca.bid(1, VALID_BID));
+    yield utils.assertRevert(rosca.bid(1, VALID_BID));
     yield rosca.contribute(0, consts.CONTRIBUTION_SIZE);
-    yield utils.assertThrows(rosca.bid(0, VALID_BID));
+    yield utils.assertRevert(rosca.bid(0, VALID_BID));
   }));
 });

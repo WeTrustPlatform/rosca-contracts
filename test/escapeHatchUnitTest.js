@@ -42,23 +42,23 @@ contract('Escape Hatch unit test', function(accounts) {
     ESCAPE_HATCH_ENABLER = yield (yield ROSCATest.deployed()).ESCAPE_HATCH_ENABLER.call();
 
     yield* runRoscUpToAPoint(ethRoscaHelper);
-    yield utils.assertThrows(ethRoscaHelper.enableEscapeHatch(0));  // foreperson
-    yield utils.assertThrows(ethRoscaHelper.enableEscapeHatch(3));  // member
+    yield utils.assertRevert(ethRoscaHelper.enableEscapeHatch(0));  // foreperson
+    yield utils.assertRevert(ethRoscaHelper.enableEscapeHatch(3));  // member
     // Doesn't throw.
     yield ethRoscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // member
   }));
 
   it("checks that only foreperson can activate the escape hatch and that too only when enabled", co(function* () {
     yield* runRoscUpToAPoint(ethRoscaHelper);
-    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(3));  // member
-    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
+    yield utils.assertRevert(ethRoscaHelper.activateEscapeHatch(3));  // member
+    yield utils.assertRevert(ethRoscaHelper.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
     // foreperson can't activate either, as escape hatch isn't enabled.
-    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(0));
+    yield utils.assertRevert(ethRoscaHelper.activateEscapeHatch(0));
 
     // Enable. Now only the foreperson should be able to activate.
     yield ethRoscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
-    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(3));  // member
-    yield utils.assertThrows(ethRoscaHelper.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
+    yield utils.assertRevert(ethRoscaHelper.activateEscapeHatch(3));  // member
+    yield utils.assertRevert(ethRoscaHelper.activateEscapeHatch(ESCAPE_HATCH_ENABLER));
     yield ethRoscaHelper.activateEscapeHatch(0);  // does not throw
   }));
 
@@ -75,8 +75,8 @@ contract('Escape Hatch unit test', function(accounts) {
     yield ethRoscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);  // escape hatch enabler
     yield ethRoscaHelper.activateEscapeHatch(0);
 
-    yield utils.assertThrows(ethRoscaHelper.contribute(1, consts.CONTRIBUTION_SIZE * 7));
-    yield utils.assertThrows(ethRoscaHelper.withdraw(1));
+    yield utils.assertRevert(ethRoscaHelper.contribute(1, consts.CONTRIBUTION_SIZE * 7));
+    yield utils.assertRevert(ethRoscaHelper.withdraw(1));
   }));
 
   it("checks that emergencyWithdrawal can only be called when escape hatch is enabled and active, and that " +
@@ -84,12 +84,12 @@ contract('Escape Hatch unit test', function(accounts) {
     for (let roscaHelper of [ethRoscaHelper, erc20RoscaHelper]) {
       let tokenContract = yield roscaHelper.tokenContract();
       yield* runRoscUpToAPoint(roscaHelper);
-      utils.assertThrows(roscaHelper.emergencyWithdrawal(0));  // not enabled and active
+      utils.assertRevert(roscaHelper.emergencyWithdrawal(0));  // not enabled and active
       yield roscaHelper.enableEscapeHatch(ESCAPE_HATCH_ENABLER);
-      utils.assertThrows(roscaHelper.emergencyWithdrawal(0));  // not active
+      utils.assertRevert(roscaHelper.emergencyWithdrawal(0));  // not active
       yield roscaHelper.activateEscapeHatch(0);
-      utils.assertThrows(roscaHelper.emergencyWithdrawal(ESCAPE_HATCH_ENABLER));  // not by foreperson
-      utils.assertThrows(roscaHelper.emergencyWithdrawal(1));  // not by foreperson
+      utils.assertRevert(roscaHelper.emergencyWithdrawal(ESCAPE_HATCH_ENABLER));  // not by foreperson
+      utils.assertRevert(roscaHelper.emergencyWithdrawal(1));  // not by foreperson
 
       let forepersonBalanceBefore = yield roscaHelper.getBalance(0, tokenContract);
       yield roscaHelper.emergencyWithdrawal(0);  // not by foreperson
