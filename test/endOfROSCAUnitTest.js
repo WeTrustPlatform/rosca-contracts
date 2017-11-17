@@ -147,7 +147,7 @@ contract('end of ROSCA unit test', function(accounts) {
       yield ethRoscaHelper.endOfROSCARetrieveFees(0);
 
       // Foreperson should only be able to retrieve surplus one round after end.
-      yield utils.assertThrows(
+      yield utils.assertRevert(
           ethRoscaHelper.endOfROSCARetrieveSurplus(0));
       utils.increaseTime(consts.ROUND_PERIOD_IN_SECS);
       yield ethRoscaHelper.endOfROSCARetrieveSurplus(0);

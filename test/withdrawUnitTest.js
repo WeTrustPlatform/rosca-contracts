@@ -64,7 +64,7 @@ contract('ROSCA withdraw Unit Test', function(accounts) {
             ethRoscaHelper.contribute(2, consts.CONTRIBUTION_SIZE * 0.8),
         ]);
 
-        yield utils.assertThrows(ethRoscaHelper.withdraw(2),
+        yield utils.assertRevert(ethRoscaHelper.withdraw(2),
             "expected calling withdraw when totalDebit is greater than totalCredit to throw");
     }));
 

@@ -62,7 +62,7 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
 
         let expectedBalance = - consts.CONTRIBUTION_SIZE;
         assert.equal(balance, expectedBalance);
-        utils.assertThrows(roscaHelper.withdraw(1));
+        utils.assertRevert(roscaHelper.withdraw(1));
 
         // contributed extra by CONTRIBUTION_SIZE, when we try to withdraw, we should get CONTRIBUTION_SIZE
         let EXTRA_CONTRIBUTION = 2e18;
