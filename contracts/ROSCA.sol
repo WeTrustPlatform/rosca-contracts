@@ -42,17 +42,17 @@ contract ROSCA {
   /////////
   // EVENTS
   /////////
-  event LogContributionMade(address user, uint256 amount, uint256 currentRound);
+  event LogContributionMade(address indexed user, uint256 amount, uint256 currentRound);
   event LogStartOfRound(uint256 currentRound);
-  event LogBidSurpassed(uint256 prevBid, address prevWinnerAddress, uint256 currentRound);
-  event LogNewLowestBid(uint256 bid, address winnerAddress, uint256 currentRound);
-  event LogRoundFundsReleased(address winnerAddress, uint256 amount, uint256 roundDiscount, uint256 currentRound);
-  event LogFundsWithdrawal(address user, uint256 amount, uint256 currentRound);
+  event LogBidSurpassed(uint256 prevBid, address indexed prevWinnerAddress, uint256 currentRound);
+  event LogNewLowestBid(uint256 bid, address indexed winnerAddress, uint256 currentRound);
+  event LogRoundFundsReleased(address indexed winnerAddress, uint256 amount, uint256 roundDiscount, uint256 currentRound);
+  event LogFundsWithdrawal(address indexed user, uint256 amount, uint256 currentRound);
   // Fired when withdrawer is entitled for a larger amount than the contract
   // actually holds (excluding fees). A LogFundsWithdrawal will follow
   // this event with the actual amount released, if send() is successful.
-  event LogCannotWithdrawFully(uint256 creditAmount, uint256 currentRound);
-  event LogUnsuccessfulBid(address bidder, uint256 bid, uint256 lowestBid, uint256 currentRound);
+  event LogCannotWithdrawFully(address indexed user, uint256 creditAmount, uint256 currentRound);
+  event LogUnsuccessfulBid(address indexed bidder, uint256 bid, uint256 lowestBid, uint256 currentRound);
   event LogEndOfROSCA();
   event LogForepersonSurplusWithdrawal(uint256 amount);
   event LogFeesWithdrawal(uint256 amount);
@@ -223,7 +223,7 @@ contract ROSCA {
     * Priority is given to non-delinquent participants.
     */
   function startRound() onlyIfRoscaNotEnded external {
-    uint256 roundStartTime = SafeMath.add(startTime, (SafeMath.mul(uint(currentRound), roundPeriodInSecs)));
+    uint256 roundStartTime = SafeMath.add(startTime, (SafeMath.mul(currentRound, roundPeriodInSecs)));
     require(now >= roundStartTime ); // too early to start a new round.
 
     if (currentRound != 0) {
@@ -482,7 +482,7 @@ contract ROSCA {
 
     if (amountAvailable < amountToWithdraw) {
       // This may happen if some participants are delinquent.
-      LogCannotWithdrawFully(amountToWithdraw, currentRound);
+      LogCannotWithdrawFully(msg.sender, amountToWithdraw, currentRound);
       amountToWithdraw = amountAvailable;
     }
     members[msg.sender].credit -= amountToWithdraw;
