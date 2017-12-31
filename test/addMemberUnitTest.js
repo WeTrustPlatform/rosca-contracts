@@ -18,6 +18,14 @@ contract('ROSCA addMember Unit Test', function(accounts) {
         roscaHelper = new ROSCAHelper(accounts, (yield utils.createEthROSCA()));
     }));
 
+    it("throws when adding an zero (0x0) address", co(function* () {
+      // first add a valid nonMember to make sure addMember works
+      yield roscaHelper.addMember(5);
+
+      yield utils.assertRevert(roscaHelper.addMember('0x000'),
+        "adding zero address member succeed when it should have thrown");
+    }));
+
     it("throws when adding an existing member", co(function* () {
         yield utils.assertRevert(roscaHelper.addMember(1),
             "adding existing member succeed when it should have thrown");
