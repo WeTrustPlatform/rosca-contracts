@@ -21,11 +21,19 @@ contract('ROSCA constructor Unit Test', function(accounts) {
       blockTime = latestBlock.timestamp;
     });
 
+  it("throw if the creator is not in memberList", co(function* () {
+    yield utils.assertRevert(ROSCATest.new(
+      0 /* use ETH */, 0 /* use bidding Rosca */,
+      consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY,
+      [accounts[1], accounts[2]] /* only pass in one member */, consts.SERVICE_FEE_IN_THOUSANDTHS),
+      "contract creation successful");
+  }));
+
   it("throw if member count is less than 2", co(function* () {
     yield utils.assertRevert(ROSCATest.new(
       0 /* use ETH */, 0 /* use bidding Rosca */,
       consts.ROUND_PERIOD_IN_SECS, consts.CONTRIBUTION_SIZE, blockTime + consts.START_TIME_DELAY,
-      [accounts[1]] /* only pass in one member */, consts.SERVICE_FEE_IN_THOUSANDTHS),
+      [accounts[0]] /* only pass in one member */, consts.SERVICE_FEE_IN_THOUSANDTHS),
       "contract creation successful");
   }));
 

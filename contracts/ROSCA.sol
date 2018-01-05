@@ -212,11 +212,12 @@ contract ROSCA {
       addMember(members_[i]);
     }
 
+    require(members[msg.sender].alive);
+
     LogStartOfRound(currentRound);
   }
 
   function addMember(address newMember) onlyNonZeroAddress(newMember) internal {
-
     require(!members[newMember].alive);  // already registered
 
     members[newMember] = User({paid: false , credit: 0, alive: true, debt: false});
