@@ -173,7 +173,7 @@ roscaHelper.prototype.getContractStatus = co(function* (optRosca) {
   return {
     credits: [
       memberInfos[0], memberInfos[1], memberInfos[2], memberInfos[3]],
-    totalDiscounts: results[0].toNumber(),
+    totalDiscounts: results[0].toNumber() / consts.memberCount(),
     currentRound: results[1].toNumber(),
     balance: balance,
     totalFees: results[2].toNumber(),

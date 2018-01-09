@@ -37,8 +37,10 @@ contract('ROSCA getParticipantBalance Unit Test', function(accounts) {
 
         let totalDiscounts = yield roscaHelper.totalDiscounts();
 
+        let userDiscount = totalDiscounts / consts.memberCount();
+
         // expected = Pot Won * Fee - next Round contribution
-        let expectedBalance = utils.afterFee(consts.defaultPot() * 0.98) - consts.CONTRIBUTION_SIZE + totalDiscounts;
+        let expectedBalance = utils.afterFee(consts.defaultPot() * 0.98) - consts.CONTRIBUTION_SIZE + userDiscount;
         assert.equal(balance, expectedBalance);
 
         // expectedBalance is Pot won - nextRound contribution (contributionSize + totalDiscount)

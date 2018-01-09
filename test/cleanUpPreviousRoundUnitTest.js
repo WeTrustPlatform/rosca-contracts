@@ -29,8 +29,7 @@ contract('ROSCA cleanUpPreviousRound Unit Test', function(accounts) {
         yield roscaHelper.cleanUpPreviousRound();
 
         let discount = yield roscaHelper.totalDiscounts();
-        const expectedDiscount = utils.afterFee(consts.defaultPot() - BID_TO_PLACE, consts.SERVICE_FEE_IN_THOUSANDTHS)
-          / consts.memberCount();
+        const expectedDiscount = utils.afterFee(consts.defaultPot() - BID_TO_PLACE, consts.SERVICE_FEE_IN_THOUSANDTHS);
 
         assert.equal(discount, expectedDiscount, "toalDiscount value didn't get added properly");
     }));
