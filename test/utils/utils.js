@@ -4,6 +4,9 @@ let assert = require('chai').assert;
 let co = require("co").wrap;
 let consts = require("./consts.js");
 let Promise = require("bluebird");
+let ROSCATest = artifacts.require('ROSCATest.sol'); // eslint-disable-line
+let ExampleToken = artifacts.require('test/ExampleToken.sol'); // eslint-disable-line
+let ERC20TokenInterface = artifacts.require('deps/ERC20TokenInterface.sol'); // eslint-disable-line
 
 // we need this becaues test env is different than script env
 let myWeb3 = (typeof web3 === undefined ? undefined : web3);
@@ -15,7 +18,8 @@ module.exports = {
     myWeb3 = web3;
   },
 
-  afterFee: function(amount, serviceFeeInThousandths) {
+  afterFee: function(amount, optServiceFeeInThousandths) {
+    let serviceFeeInThousandths = optServiceFeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS;
     return amount / 1000 * (1000 - serviceFeeInThousandths);
   },
 
@@ -27,62 +31,67 @@ module.exports = {
     return promise.then(function() {
       assert.isNotOk(true, err);
     }).catch(function(e) {
-      assert.include(e.message, 'invalid JUMP', "contract didn't throw as expected");
+      assert.include(e.message, 'invalid opcode', "contract didn't throw as expected");
     });
   },
 
-  createROSCA: function(ERC20Address, ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-                        MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS) {
+  assertRevert: function(promise, err) {
+    return promise.then(function() {
+      assert.isNotOk(true, err);
+    }).catch(function(e) {
+      assert.include(e.message, 'revert', "contract didn't throw as expected");
+    });
+  },
+
+  createROSCA: function(ERC20Address, optRoscaType, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+                        optMemberList, optServicefeeInThousandths) {
+    optRoscaType = optRoscaType || consts.ROSCA_TYPE;
+    optRoundPeriodInSecs = optRoundPeriodInSecs || consts.ROUND_PERIOD_IN_SECS;
+    optcontributionSize = optcontributionSize || consts.CONTRIBUTION_SIZE;
+    optStartTimeDelay = optStartTimeDelay || consts.START_TIME_DELAY;
+    optMemberList = optMemberList || consts.memberList();
+    optServicefeeInThousandths = optServicefeeInThousandths || consts.SERVICE_FEE_IN_THOUSANDTHS;
+
     this.mineOneBlock(); // mine an empty block to ensure latest's block timestamp is the current Time
 
     let latestBlock = web3.eth.getBlock("latest");
     let blockTime = latestBlock.timestamp;
     return ROSCATest.new(
-        ERC20Address,
-        ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, blockTime + START_TIME_DELAY, MEMBER_LIST,
-        SERVICE_FEE_IN_THOUSANDTHS);
+        ERC20Address, optRoscaType,
+        optRoundPeriodInSecs, optcontributionSize, blockTime + optStartTimeDelay, optMemberList,
+        optServicefeeInThousandths);
   },
 
-  createEthROSCA: function(ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-                           MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS) {
-    return this.createROSCA(0 /* use ETH */, ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE,
-                            START_TIME_DELAY, MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS);
+  createEthROSCA: function(optMemberList, optRoscaType, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+                            optServicefeeInThousandths) {
+    return this.createROSCA(0 /* use ETH */, optRoscaType, optRoundPeriodInSecs, optcontributionSize,
+                            optStartTimeDelay, optMemberList, optServicefeeInThousandths);
   },
 
-  createERC20ROSCA: co(function* (ROUND_PERIOD_IN_SECS, CONTRIBUTION_SIZE, START_TIME_DELAY,
-                                 MEMBER_LIST, SERVICE_FEE_IN_THOUSANDTHS, accountsToInjectTo) {
+  createERC20ROSCA: co(function* (optAccountsToInjectTo, optRoscaType, optRoundPeriodInSecs, optcontributionSize, optStartTimeDelay,
+                                 optMemberList, optServicefeeInThousandths) {
+    let accountsToInjectTo = optAccountsToInjectTo || consts.memberList();
     let exampleToken = yield ExampleToken.new(accountsToInjectTo || []);
-    return this.createROSCA(exampleToken.address, ROUND_PERIOD_IN_SECS,  // eslint-disable-line no-invalid-this
-                              CONTRIBUTION_SIZE, START_TIME_DELAY, MEMBER_LIST,
-                              SERVICE_FEE_IN_THOUSANDTHS);
+    return this.createROSCA(exampleToken.address, optRoscaType, optRoundPeriodInSecs,  // eslint-disable-line no-invalid-this
+                              optcontributionSize, optStartTimeDelay, optMemberList,
+                              optServicefeeInThousandths);
   }),
 
-  // Currency-agnostic
-  contractNetCredit: function* (rosca) {
-    let tokenContract = yield rosca.tokenContract.call();
-    if (tokenContract == ZERO_ADDRESS) {
-      return web3.eth.getBalance(rosca.address).toNumber() - (yield rosca.totalFees.call()).toNumber();
-    }
-    return (yield ExampleToken.at(tokenContract).balanceOf(rosca.address)) - (yield rosca.totalFees.call()).toNumber();
-  },
+  createETHandERC20Roscas: co(function* (accounts) {
+    let ethRosca = yield this.createEthROSCA(); // eslint-disable-line
+    let erc20Rosca = yield this.createERC20ROSCA(accounts); //eslint-disable-line
+    return {ethRosca: ethRosca, erc20Rosca: erc20Rosca};
+  }),
 
-  // Currency-agnostic
-  contribute: function(rosca, from, value) {
-    return rosca.tokenContract.call().then((tokenContract) => {
-      if (tokenContract !== ZERO_ADDRESS) {  // This is an ERC20 contract. Approve and contribute.
-        return ERC20TokenInterface.at(tokenContract).approve(rosca.address, value, {from: from}).then(() => {
-          return rosca.contribute({from: from, gas: 2e6});
-        });
-      }
-      // This is an ETH contract. Only need to call contribute.
-      return rosca.contribute({from: from, value: value});
-    });
-  },
+  getBalance: co(function* (userIndexOrAddress, optTokenContract) {
+    let account = (typeof userIndexOrAddress === 'number') ?
+      this.accounts[userIndexOrAddress] : userIndexOrAddress; // eslint-disable-line
+    let tokenContract = optTokenContract || ZERO_ADDRESS;
 
-  getBalance: co(function* (account, tokenContract) {
     if (!tokenContract || tokenContract === ZERO_ADDRESS) {
       return web3.eth.getBalance(account).toNumber();
     }
+
     let balance = (yield ExampleToken.at(tokenContract).balanceOf(account)).toNumber();
     return balance;
   }),
