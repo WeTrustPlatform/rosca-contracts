@@ -601,14 +601,17 @@ contract ROSCA {
    */
   function emergencyWithdrawal() onlyFromForeperson onlyIfEscapeHatchActive external {
     LogEmergencyWithdrawalPerformed(getBalance(), currentRound);
+    bool fundsTransferSuccess = false;
     // Send everything, including potential fees, to foreperson to disperse offline to participants.
     bool isEthRosca = (tokenContract == address(0));
     if (!isEthRosca) {
       uint256 balance = tokenContract.balanceOf(address(this));
-      // we don't care much about the success of transfer` here as there's not much we can do.
-      tokenContract.transfer(foreperson, balance);
+      fundsTransferSuccess = tokenContract.transfer(foreperson, balance);
     }
-    selfdestruct(foreperson);
+
+    if (fundsTransferSuccess || isEthRosca) {
+      selfdestruct(foreperson);
+    }
   }
 
 	////////////////////
