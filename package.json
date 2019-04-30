@@ -21,7 +21,7 @@
     "truffle": "3.4.11"
   },
   "engines": {
-    "node": "10",
+    "node": "10"
   },
   "scripts": {
     "test": "./tools/build/run-testrpc-and-tests.sh"
